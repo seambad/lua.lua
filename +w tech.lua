@@ -1,4 +1,3 @@
-
 local ffi = require 'ffi'
 local vector = require 'vector'
 
@@ -57,7 +56,7 @@ local script do
     end
 
     if user == nil then
-        user = 'Slowdex'
+        user = 'Admin'
     end
 
     if build == nil then
@@ -14867,5 +14866,4 @@ local features do
         end
     end
 end
-
 

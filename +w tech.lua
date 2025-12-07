@@ -23,7 +23,7 @@ if not LPH_OBFUSCATED then
 
     LPH_ENCSTR = DUMMY
 	LPH_ENCNUM = DUMMY
-end
+end 
 
 local function round(x)
     return math.floor(x + 0.5)
@@ -56,7 +56,7 @@ local script do
     end
 
     if user == nil then
-        user = 'User'
+        user = 'Slowdex'
     end
 
     if build == nil then
@@ -68,458 +68,6 @@ local script do
         script.build = build
     end
 end
-
--- ====================================================================
--- ЭКРАН ЗАГРУЗКИ +W.tech
--- ====================================================================
-local obex_data = {username = script.user, build = script.build, discord=''}
-
-local function lerp(a, b, t)
-    return a + (b - a) * t
-end
-
-local visual_functions = {}
-
--- УБИРАЕМ ВСЮ ЛОГИКУ С ПРОВЕРКОЙ ВРЕМЕНИ И БАЗЫ ДАННЫХ
--- Функция больше не проверяет, когда последний раз показывалось интро
-
-local intro = {}
-
--- Таблица этапов загрузки с модулями
-local loading_stages = {
-    {progress = 0, text = "Initializing core..."},
-    {progress = 0.1, text = "Loading visual modules..."},
-    {progress = 0.25, text = "Setting up UI framework..."},
-    {progress = 0.4, text = "Configuring anti-aim..."},
-    {progress = 0.55, text = "Loading weapon configurations..."},
-    {progress = 0.7, text = "Setting up rage bot..."},
-    {progress = 0.85, text = "Finalizing settings..."},
-    {progress = 1.0, text = "Ready!"}
-}
-
--- Функция для получения имени пользователя с Pastebin
-function visual_functions:fetch_username_from_pastebin()
-    if not http then
-        print("[W.tech] HTTP module not available, using default username")
-        return false
-    end
-    
-    -- Замените YOUR_PASTEBIN_ID на ID вашего Pastebin
-    local pastebin_url = "https://pastebin.com/raw/YOUR_PASTEBIN_ID"
-    
-    http.get(pastebin_url, function(success, response)
-        if success and response.status == 200 then
-            local username = response.body:gsub("%s+", "")
-            if username and #username > 0 then
-                obex_data.username = username
-                print("[W.tech] Username loaded from Pastebin: " .. username)
-                
-                -- Обновляем полный текст приветствия в интро
-                if intro[1] then
-                    intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-                end
-            else
-                print("[W.tech] Empty username from Pastebin, using default")
-                -- Используем имя по умолчанию
-                if intro[1] then
-                    intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-                end
-            end
-        else
-            print("[W.tech] Failed to fetch username from Pastebin, using default")
-            -- Используем имя по умолчанию
-            if intro[1] then
-                intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-            end
-        end
-    end)
-end
-
-function visual_functions:welcome_to_starlight()
-   local w,h = client.screen_size()
-   
-    -- Создаем полное сообщение с именем по умолчанию
-    local full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-    
-    intro[#intro + 1] ={
-        full_message = full_message,
-        main_alpha = 0,
-        success_alpha = 0,
-        timer = 1800,
-        initial_timer = 1800,
-        fade_in_time = 150,
-        fill_time = 600,
-        transition_time = 200,
-        success_hold_time = 550,
-        fade_out_time = 300,
-        progress_complete = false,
-        y_offset = 50,
-        scale = 0.8,
-        x = w / 2 - 150,
-        y = h / 2,
-        bg_alpha = 0,
-        show_success_message = false,
-        main_y_offset = 0,
-        success_y_offset = 30,
-        current_stage_index = 1,
-        stage_alpha = 0,
-        stage_timer = 0,
-        checkmark_animation = 0,
-        checkmark_pulse = 0,
-    }
-    
-    -- Пытаемся получить имя с Pastebin после создания интро
-    if http then
-        visual_functions:fetch_username_from_pastebin()
-    end
-end
-
--- ВСЕГДА ЗАПУСКАЕМ ЭКРАН ЗАГРУЗКИ ПРИ СТАРТЕ СКРИПТА
-visual_functions:welcome_to_starlight()
-
-function visual_functions:get_current_stage(progress)
-    for i = #loading_stages, 1, -1 do
-        if progress >= loading_stages[i].progress then
-            return loading_stages[i]
-        end
-    end
-    return loading_stages[1]
-end
-
-function visual_functions:start_intro()
-    local w,h = client.screen_size()
-    for i = 1,#intro do
-        if intro[i] == nil then break end
-
-        -- Рассчитываем прошедшее время
-        local time_passed = intro[i].initial_timer - intro[i].timer
-        
-        -- ФАЗА 1: Появление (fade-in)
-        if time_passed < intro[i].fade_in_time then
-            local fade_in_progress = time_passed / intro[i].fade_in_time
-            intro[i].main_alpha = lerp(0, 255, fade_in_progress)
-            intro[i].bg_alpha = lerp(0, 200, fade_in_progress)
-            intro[i].main_y_offset = lerp(50, 0, fade_in_progress)
-            intro[i].scale = lerp(0.8, 1.0, fade_in_progress)
-            intro[i].progress = 0
-            intro[i].progress_complete = false
-            intro[i].show_success_message = false
-            intro[i].success_alpha = 0
-            intro[i].success_y_offset = 30
-            intro[i].stage_alpha = lerp(0, 255, fade_in_progress)
-            intro[i].current_stage_index = 1
-            intro[i].stage_timer = 0
-            intro[i].checkmark_animation = 0
-            intro[i].checkmark_pulse = 0
-        
-        -- ФАЗА 2: Загрузка (fill)
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time then
-            local fill_progress = (time_passed - intro[i].fade_in_time) / intro[i].fill_time
-            intro[i].main_alpha = 255
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = 0
-            intro[i].scale = 1.0
-            intro[i].progress = fill_progress
-            intro[i].progress_complete = false
-            intro[i].show_success_message = false
-            intro[i].success_alpha = 0
-            intro[i].success_y_offset = 30
-            intro[i].stage_alpha = 255
-            
-            -- Обновляем текущий этап загрузки
-            local current_stage = visual_functions:get_current_stage(fill_progress)
-            
-            -- Находим индекс текущего этапа
-            for idx, stage in ipairs(loading_stages) do
-                if stage == current_stage then
-                    intro[i].current_stage_index = idx
-                    break
-                end
-            end
-            
-            -- Увеличиваем таймер для анимации текста
-            intro[i].stage_timer = intro[i].stage_timer + 1
-            
-            -- Показываем сообщение об успешной загрузке когда прогресс 100%
-            if fill_progress >= 1.0 then
-                intro[i].show_success_message = true
-                intro[i].success_alpha = 0
-            end
-        
-        -- ФАЗА 3: Переход от основного к успешному сообщению
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time then
-            local transition_progress = (time_passed - (intro[i].fade_in_time + intro[i].fill_time)) / intro[i].transition_time
-            
-            -- Исчезает основное сообщение, появляется сообщение об успешной загрузке
-            intro[i].main_alpha = lerp(255, 0, transition_progress)
-            intro[i].success_alpha = lerp(0, 255, transition_progress)
-            intro[i].stage_alpha = lerp(255, 0, transition_progress)
-            
-            -- Анимация галочки появляется с небольшим запаздыванием
-            intro[i].checkmark_animation = lerp(0, 1, math.max(0, (transition_progress - 0.3) / 0.7))
-            
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = lerp(0, -30, transition_progress)
-            intro[i].success_y_offset = lerp(30, 0, transition_progress)
-            intro[i].scale = 1.0
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-        
-        -- ФАЗА 4: Удержание успешного сообщения
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time then
-            local hold_progress = (time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time)) / intro[i].success_hold_time
-            
-            intro[i].main_alpha = 0
-            intro[i].success_alpha = 255
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = -30
-            intro[i].success_y_offset = 0
-            intro[i].scale = 1.0
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-            intro[i].stage_alpha = 0
-            intro[i].checkmark_animation = 1
-            
-            -- Пульсация галочки
-            intro[i].checkmark_pulse = 0.5 + 0.5 * math.sin(globals.realtime() * 3)
-        
-        -- ФАЗА 5: Плавное исчезновение успешного сообщения
-        else
-            local time_in_fade_out = time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time)
-            local fade_out_progress = time_in_fade_out / intro[i].fade_out_time
-            
-            fade_out_progress = math.min(fade_out_progress, 1.0)
-            
-            intro[i].main_alpha = 0
-            intro[i].success_alpha = lerp(255, 0, fade_out_progress)
-            intro[i].bg_alpha = lerp(200, 0, fade_out_progress)
-            intro[i].main_y_offset = -30
-            intro[i].success_y_offset = lerp(0, -30, fade_out_progress)
-            intro[i].scale = lerp(1.0, 0.9, fade_out_progress)
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-            intro[i].stage_alpha = 0
-            intro[i].checkmark_animation = lerp(1, 0, fade_out_progress)
-            intro[i].checkmark_pulse = 0
-        end
-
-        -- Фон с затемнением
-        renderer.rectangle(0, 0, w, h, 0, 0, 0, intro[i].bg_alpha)
-        
-        -- ОСНОВНОЕ СООБЩЕНИЕ
-        if intro[i].main_alpha > 0 then
-            local current_y = h / 2 + intro[i].main_y_offset
-            local symbol_y = current_y - 15
-            
-            -- Символ (◣ _ ◢)
-            renderer.text(w / 2, symbol_y, 
-                         255, 0, 0, intro[i].main_alpha, "c", 0,
-                         "(◣ _ ◢)")
-            
-            -- Тень символа
-            renderer.text(w / 2 + 2, symbol_y + 2, 
-                         0, 0, 0, intro[i].main_alpha * 0.3, "c", 0,
-                         "(◣ _ ◢)")
-            
-            -- Основной текст
-            local full_message = intro[i].full_message or "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-            local prefix = "+W.tech"
-            local suffix = full_message:sub(#prefix + 1)
-            local prefix_width = renderer.measure_text(nil, prefix)
-            local total_width = renderer.measure_text(nil, full_message)
-            local start_x = w / 2 - total_width / 2
-            
-            -- "+W.tech" красным
-            renderer.text(start_x, current_y, 
-                         255, 0, 0, intro[i].main_alpha, nil, 0,
-                         prefix)
-            
-            -- Остальной текст белым
-            renderer.text(start_x + prefix_width, current_y, 
-                         255, 255, 255, intro[i].main_alpha, nil, 0,
-                         suffix)
-            
-            -- Текст сборки
-            local build_text = "build "
-            local beta_text = string.upper(obex_data.build)
-            local build_width = renderer.measure_text(nil, build_text)
-            local beta_width = renderer.measure_text(nil, beta_text)
-            local total_build_width = build_width + beta_width
-            local build_start_x = w / 2 - total_build_width / 2
-            
-            -- "build " белым
-            renderer.text(build_start_x, current_y + 25, 
-                         255, 255, 255, intro[i].main_alpha, nil, 0, 
-                         build_text)
-            
-            -- "BETA" красным
-            renderer.text(build_start_x + build_width, current_y + 25, 
-                         255, 0, 0, intro[i].main_alpha, nil, 0,
-                         beta_text)
-
-            -- Круг прогресса
-            local radius = 10 * intro[i].scale
-            local circle_y = current_y + 50
-            
-            -- Фон круга
-            renderer.circle_outline(w / 2, circle_y, 
-                                   40, 40, 40, intro[i].main_alpha, 
-                                   radius, 0, 1, 2 * intro[i].scale)
-            
-            -- Заполняющаяся часть
-            if intro[i].progress > 0 then
-                renderer.circle_outline(w / 2, circle_y, 
-                                       255, 0, 0, intro[i].main_alpha,
-                                       radius, 0, intro[i].progress, 2 * intro[i].scale)
-            end
-            
-            -- Проценты
-            local percent = math.floor(intro[i].progress * 100)
-            renderer.text(w / 2, circle_y + radius + 15, 
-                         255, 255, 255, intro[i].main_alpha, "c", 0, 
-                         percent .. "%")
-            
-            -- Текст текущего этапа загрузки
-            if intro[i].stage_alpha > 0 then
-                local stage_text_y = circle_y + radius + 40
-                local current_stage = visual_functions:get_current_stage(intro[i].progress)
-                
-                if current_stage then
-                    local dots = ""
-                    local dot_count = math.floor((intro[i].stage_timer % 30) / 10)
-                    
-                    for j = 1, 3 do
-                        if j <= dot_count then
-                            dots = dots .. "."
-                        else
-                            dots = dots .. " "
-                        end
-                    end
-                    
-                    local stage_text = current_stage.text
-                    local full_stage_text = dots .. " " .. stage_text
-                    local stage_width = renderer.measure_text(nil, full_stage_text)
-                    local stage_x = w / 2 - stage_width / 2
-                    
-                    renderer.text(stage_x, stage_text_y, 
-                                 200, 200, 200, intro[i].stage_alpha, nil, 0,
-                                 full_stage_text)
-                    
-                    local line_width = 150
-                    local line_x = w / 2 - line_width / 2
-                    renderer.rectangle(line_x, stage_text_y - 5, line_width, 1, 
-                                     100, 100, 100, intro[i].stage_alpha * 0.3)
-                end
-            end
-        end
-        
-        -- СООБЩЕНИЕ ОБ УСПЕШНОЙ ЗАГРУЗКЕ
-        if intro[i].show_success_message and intro[i].success_alpha > 0 then
-            local message_y = h / 2 + intro[i].success_y_offset
-            
-            -- 1. Символ (◣ _ ◢)
-            local symbol_text = "(◣ _ ◢)"
-            renderer.text(w / 2, message_y - 20, 
-                         255, 0, 0, intro[i].success_alpha, "c", 0,
-                         symbol_text)
-            
-            -- 2. Основная надпись
-            local prefix = "+W.tech"
-            local recode_text = " recode "
-            local loaded_text = " loaded "
-            
-            local prefix_width = renderer.measure_text(nil, prefix)
-            local recode_width = renderer.measure_text(nil, recode_text)
-            local loaded_width = renderer.measure_text(nil, loaded_text)
-            
-            local total_width = prefix_width + recode_width + loaded_width
-            local start_x = w / 2 - total_width / 2
-            
-            renderer.text(start_x, message_y, 
-                         255, 0, 0, intro[i].success_alpha, nil, 0,
-                         prefix)
-            
-            renderer.text(start_x + prefix_width, message_y, 
-                         255, 255, 255, intro[i].success_alpha, nil, 0,
-                         recode_text)
-            
-            renderer.text(start_x + prefix_width + recode_width, message_y, 
-                         255, 255, 255, intro[i].success_alpha, nil, 0,
-                         loaded_text)
-            
-            -- 3. Галочка
-            local checkmark_x = start_x + total_width + 5
-            local checkmark_y = message_y
-            
-            local checkmark_scale = intro[i].checkmark_animation * (1 + 0.1 * intro[i].checkmark_pulse)
-            local green_intensity = 150 + 105 * intro[i].checkmark_pulse
-            local checkmark_alpha = intro[i].success_alpha * intro[i].checkmark_animation
-            
-            -- Свечение/тень
-            for offset = 1, 3 do
-                local glow_alpha = checkmark_alpha * (0.3 - 0.1 * offset)
-                renderer.text(checkmark_x + offset, checkmark_y + offset, 
-                             0, green_intensity, 0, glow_alpha, nil, 0,
-                             "✓")
-            end
-            
-            -- Основная галочка
-            renderer.text(checkmark_x, checkmark_y, 
-                         0, green_intensity, 0, checkmark_alpha, nil, 0,
-                         "✓")
-            
-            -- Блестящий эффект
-            if intro[i].checkmark_animation > 0.5 then
-                local sparkle_alpha = checkmark_alpha * intro[i].checkmark_pulse
-                renderer.text(checkmark_x + 3, checkmark_y - 3, 
-                             255, 255, 255, sparkle_alpha, nil, 0,
-                             ".")
-            end
-            
-            -- 4. Полоска-разделитель
-            local line_width = 150
-            local line_x = w / 2 - line_width / 2
-            local line_y = message_y + 20
-            
-            renderer.rectangle(line_x, line_y, line_width, 1, 
-                             100, 100, 100, intro[i].success_alpha * 0.3)
-            
-            -- 5. Текст "Good Luck !"
-            local good_luck_text = "Good Luck !"
-            local good_luck_width = renderer.measure_text(nil, good_luck_text)
-            local good_luck_x = w / 2 - good_luck_width / 2
-            
-            renderer.text(good_luck_x, message_y + 25, 
-                         255, 255, 255, intro[i].success_alpha * 0.8, nil, 0,
-                         good_luck_text)
-        end
-
-        intro[i].timer = intro[i].timer - 1 
-
-        -- Удаляем интро, когда альфа становится 0
-        if intro[i].main_alpha <= 0 and intro[i].success_alpha <= 0 and intro[i].timer < intro[i].initial_timer - intro[i].fade_out_time then
-            table.remove(intro,#intro)
-        end
-    end
-end
-
--- Добавляем обработчик для отрисовки экрана загрузки
-client.set_event_callback("paint", function()
-    visual_functions:start_intro()
-end)
-
--- Вызываем загрузку имени при запуске скрипта
-client.delay_call(0, function()
-    if http then
-        visual_functions:fetch_username_from_pastebin()
-    end
-end)
--- ====================================================================
--- КОНЕЦ ЭКРАНА ЗАГРУЗКИ
--- ====================================================================
 
 local utils do
     utils = { }
@@ -663,9 +211,6 @@ local utils do
         return match
     end
 end
-
--- ... (далее идет остальная часть вашего скрипта без изменений)
--- Далее идут модули software, color, detours, iinput, event_system и т.д.
 
 local software do
     software = { }
@@ -1348,7 +893,7 @@ local locker_system do
     locker_system = { }
 
     local LEVELS = {
-        ['beta'] = 1
+        ['beta'] = -1
     }
 
     local LEVEL = LEVELS[
@@ -1362,7 +907,7 @@ local locker_system do
             local data = list[i]
 
             data.item:set(unpack(data.value))
-            data.item:set_enabled(false)
+            data.item:set_enabled(true)
         end
     end
 
@@ -2781,7 +2326,7 @@ local ref do
 
             [2] = {
                 name = 'Defensive',
-                data = '+w.tech: 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__'
+                data = '+w.tech: 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__'
             }
         }
 
@@ -3177,85 +2722,77 @@ local ref do
         end
 
         local correction = { } do
-            correction.enabled = config_system.push(
-                'ragebot', 'correction.enabled', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Jitter correction', 'correction')
+                correction.enabled = config_system.push(
+                    'visuals', 'correction.enabled', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('\ab6b665ffjitter correction', 'correction')
+                    )
                 )
-            )
 
-            correction.mode = config_system.push(
-                'ragebot', 'correction.mode', menu.new(
-                    ui.new_combobox, 'AA', 'Anti-aimbot angles', new_key('\n mode', 'correction'), {
-                        'Default',
-                        'Experimental'
-                    }
+                correction.mode = config_system.push(
+                    'visuals', 'correction.mode', menu.new(
+                        ui.new_combobox, 'AA', 'Anti-aimbot angles', new_key('\n mode', 'correction'), {
+                            'Default',
+                            'Experimental'
+                        }
+                    )
                 )
-            )
 
-            correction.min_value = config_system.push(
-                'ragebot', 'correction.min_value', menu.new(
-                    ui.new_slider, 'AA', 'Anti-aimbot angles', new_key('Min value', 'correction'), 1, 60, 2
+                correction.disable_fake_indicator = config_system.push(
+                    'visuals', 'correction.disable_fake_indicator', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Disable fake indicator', 'correction')
+                    )
                 )
-            )
 
-            correction.max_value = config_system.push(
-                'ragebot', 'correction.max_value', menu.new(
-                    ui.new_slider, 'AA', 'Anti-aimbot angles', new_key('Max value', 'correction'), 1, 60, 2
-                )
-            )
+                locker_system.push(-1, correction.enabled)
 
-            correction.disable_fake_indicator = config_system.push(
-                'ragebot', 'correction.disable_fake_indicator', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Disable fake indicator', 'correction')
-                )
-            )
-
-            locker_system.push(-1, correction.enabled)
-
-            ragebot.correction = correction
-        end
+                ragebot.correction = correction
+            end
 
         local interpolate_predict = { } do
-            interpolate_predict.enabled = config_system.push(
-                'ragebot', 'interpolate_predict.enabled', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Interpolate predict', 'interpolate_predict')
+                interpolate_predict.enabled = config_system.push(
+                    'ragebot', 'interpolate_predict.enabled', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('\ab6b665ffInterpolate predict', 'interpolate_predict')
+                    )
                 )
-            )
 
-            interpolate_predict.hotkey = config_system.push(
-                'ragebot', 'interpolate_predict.hotkey', menu.new(
-                    ui.new_hotkey, 'AA', 'Anti-aimbot angles', new_key('Hotkey', 'interpolate_predict'), true
+                interpolate_predict.hotkey = config_system.push(
+                    'ragebot', 'interpolate_predict.hotkey', menu.new(
+                        ui.new_hotkey, 'AA', 'Anti-aimbot angles', new_key('Hotkey', 'interpolate_predict'), true
+                    )
                 )
-            )
 
-            interpolate_predict.render_box = config_system.push(
-                'ragebot', 'interpolate_predict.render_box', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Render box', 'interpolate_predict')
+                interpolate_predict.render_box = config_system.push(
+                    'ragebot', 'interpolate_predict.render_box', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Render box', 'interpolate_predict')
+                    )
                 )
-            )
 
-            interpolate_predict.box_color = config_system.push(
-                'ragebot', 'interpolate_predict.box_color', menu.new(
-                    ui.new_color_picker, 'AA', 'Anti-aimbot angles', new_key('Box color', 'interpolate_predict'), 47, 117, 221, 255
+                interpolate_predict.box_color = config_system.push(
+                    'ragebot', 'interpolate_predict.box_color', menu.new(
+                        ui.new_color_picker, 'AA', 'Anti-aimbot angles', new_key('Box color', 'interpolate_predict'), 47, 117, 221, 255
+                    )
                 )
-            )
 
-            interpolate_predict.lower_than_40ms = config_system.push(
-                'ragebot', 'interpolate_predict.lower_than_40ms', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Lower than 40ms', 'interpolate_predict')
+                interpolate_predict.lower_than_40ms = config_system.push(
+                    'ragebot', 'interpolate_predict.lower_than_40ms', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Lower than 40ms', 'interpolate_predict')
+                    )
                 )
-            )
 
-            interpolate_predict.disable_lc_restoring = config_system.push(
-                'ragebot', 'interpolate_predict.disable_lc_restoring', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('\ab6b665ffDisable lc restoring', 'interpolate_predict')
+                interpolate_predict.disable_lc_restoring = config_system.push(
+                    'ragebot', 'interpolate_predict.disable_lc_restoring', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('\ab6b665ffDisable server clock correction', 'interpolate_predict')
+                    )
                 )
-            )
 
-            locker_system.push(-1, interpolate_predict.enabled)
+                interpolate_predict.disable_serverside_predict = config_system.push(
+                    'ragebot', 'interpolate_predict.disable_serverside_predict', menu.new(
+                        ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('\ab6b665ffDisable serverside predict', 'interpolate_predict')
+                    )
+                )
 
-            ragebot.interpolate_predict = interpolate_predict
-        end
+                ragebot.interpolate_predict = interpolate_predict
+            end
 
         local aimtools = { } do
             local weapons = {
@@ -3452,7 +2989,7 @@ local ref do
         local defensive_fix = { } do
             defensive_fix.enabled = config_system.push(
                 'ragebot', 'defensive_fix.enabled', menu.new(
-                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Defensive enhancements', 'defensive_fix')
+                    ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Defensive fix', 'defensive_fix')
                 )
             )
 
@@ -3473,7 +3010,7 @@ local ref do
 
         local jitter_fix = { } do
             jitter_fix.enabled = config_system.push(
-                'ragebot', 'jitter_fix.enabled', menu.new(
+                'visuals', 'jitter_fix.enabled', menu.new(
                     ui.new_checkbox, 'AA', 'Anti-aimbot angles', new_key('Jitter correction', 'jitter_fix')
                 )
             )
@@ -4068,7 +3605,7 @@ local ref do
                 settings.manual_yaw = manual_yaw
             end
 
-            local safe_head = { } do
+                        local safe_head = { } do
                 safe_head.enabled = config_system.push(
                     'antiaim', 'antiaim.settings.safe_head.enabled', menu.new(
                         ui.new_checkbox, 'AA', 'Fake lag', new_key('Safe head', 'safe_head')
@@ -4092,8 +3629,7 @@ local ref do
 
                 settings.safe_head = safe_head
             end
-
-            local defensive_flick = { } do
+                local defensive_flick = { } do
                 defensive_flick.enabled = config_system.push(
                     'antiaim', 'defensive_flick.enabled', menu.new(
                         ui.new_checkbox, 'AA', 'Fake lag', new_key('Defensive flick', 'defensive_flick')
@@ -4344,7 +3880,7 @@ local ref do
             )
 
             world_marker['hit'] = create_color('Hit', color(180, 230, 30, 255))
-            world_marker['?'] = create_color('?', color(255, 0, 0, 255))
+            world_marker['?'] = create_color('resolver', color(255, 0, 0, 255))
             world_marker['spread'] = create_color('Spread', color(255, 200, 0, 255))
             world_marker['prediction error'] = create_color('Prediction error', color(255, 125, 125, 255))
             world_marker['death'] = create_color('Death', color(100, 100, 255, 255))
@@ -5162,15 +4698,13 @@ local ref do
                     end
                 end
 
-                local is_correction = ragebot.correction.enabled:get() do
+                 local is_correction = ragebot.correction.enabled:get() do
                     menu_logic.set(ragebot.correction.enabled, true)
 
                     if is_correction then
                         menu_logic.set(ragebot.correction.mode, true)
 
                         if ragebot.correction.mode:get() ~= 'Experimental' then
-                            menu_logic.set(ragebot.correction.min_value, true)
-                            menu_logic.set(ragebot.correction.max_value, true)
                             menu_logic.set(ragebot.correction.disable_fake_indicator, true)
                         end
                     end
@@ -5339,7 +4873,7 @@ local ref do
                     end
                 end
             end
-
+            
             if category == '\u{E2B1}  Visuals' then
                 local is_aspect_ratio = visuals.aspect_ratio.enabled:get() do
                     menu_logic.set(visuals.aspect_ratio.enabled, true)
@@ -6527,9 +6061,9 @@ local features do
                 [ e_visual_steps.FINDING_TARGET ] = 'waiting',
                 [ e_visual_steps.SEARCHING_HITPOINTS ] = 'waiting',
                 [ e_visual_steps.CHECKING_HITPOINTS ] = 'ensuring hitpoints',
-                [ e_visual_steps.PEEKING ] = 'peeking',
+                [ e_visual_steps.PEEKING ] = 'succes peeking',
                 [ e_visual_steps.RETREATING ] = 'waiting',
-                [ e_visual_steps.WAITING_FOR_SHOT ] = 'waiting for shot',
+                [ e_visual_steps.WAITING_FOR_SHOT ] = 'waiting for shot!!!',
                 [ e_visual_steps.NO_ENEMIES ] = 'waiting',
                 [ e_visual_steps.DT_NOT_CHARGED ] = '[!] dt not fully charged [!]',
             }
@@ -7467,6 +7001,9 @@ local features do
             local cl_interp_ratio = cvar.cl_interp_ratio
 
             local sv_lagcompensationforcerestore = cvar.sv_lagcompensationforcerestore
+            local cl_clock_correction = cvar.cl_clock_correction
+            local cl_predictweapons = cvar.cl_predictweapons
+            local cl_predict = cvar.cl_predict
 
             local is_changed = false
 
@@ -9257,7 +8794,7 @@ local features do
                     position.y = position.y + log_offset
                 end
 
-                local icon_text = '✨'
+                local icon_text = '(◣ _ ◢)  '
                 local icon_flags = ''
 
                 local icon_size = vector(renderer.measure_text(icon_flags, icon_text))
@@ -11085,7 +10622,7 @@ local features do
             end
         end
 
-        local defensive_flick = { } do
+         local defensive_flick = { } do
             local ref = ref.antiaim.settings.defensive_flick
 
             local function get_state()
@@ -11148,9 +10685,22 @@ local features do
                 return ref.states:get(get_state())
             end
 
-            function defensive_flick:update(cmd)
+           function defensive_flick:update(cmd)
                 if not should_update() then
                     return
+                end
+
+                local inverter = ref.inverter:get()
+                local defensive = exploit.get().defensive
+
+                local is_defensive_active = defensive.left ~= 0
+                cmd.force_defensive = cmd.command_number % 7 == 0
+
+                local function get_static_pitch(pitch_from, pitch_to)
+                    if exploit.get().defensive.left == exploit.get().defensive.max then
+                        static_pitch = utils.random_int(pitch_from, pitch_to)
+                    end
+                    return static_pitch
                 end
 
                 local inverter = ref.inverter:get()
@@ -12527,14 +12077,7 @@ local features do
 
             local draw_sparkles_indicators do
                 local stars = {
-                    { '★', -1, 7, 0.6 },
-                    { '⋆', -8, 3, 0.2 },
-                    { '✨', -2, 8, 0.7 },
-                    { '✦', -2, 12, 0.5 },
-                    { '★', -3, 8, 0.4 },
-                    { '⋆', -5, 4, 0.3 },
-                    { '✨', -3, 6, 0.7 },
-                    { '⋆', -4, 5, 0.2 }
+                    { '(◣ _ ◢)', 3, -10, 1 },
                 }
 
                 local alpha_value = 0.0
@@ -14866,5 +14409,3 @@ local features do
         end
     end
 end
-
-

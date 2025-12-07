@@ -1,501 +1,9 @@
--- ʙʏ ʟ41337 && 2ʙ3ꜰ
 local vector = require 'vector'
 local c_entity = require 'gamesense/entity'
 local http = require 'gamesense/http'
 local base64 = require 'gamesense/base64'
 local clipboard = require 'gamesense/clipboard'
 local steamworks = require 'gamesense/steamworks'
-
--- =========== НАЧАЛО КОДА ЭКРАНА ЗАГРУЗКИ ===========
-local obex_data = obex_fetch and obex_fetch() or {username = 'User', build = 'BETA', discord=''}
-
-local function lerp(a, b, t)
-    return a + (b - a) * t
-end
-
-local visual_functions = {}
-
-local intro = {}
-
--- Таблица этапов загрузки с модулями
-local loading_stages = {
-    {progress = 0, text = "Initializing core..."},
-    {progress = 0.1, text = "Loading visual modules..."},
-    {progress = 0.25, text = "Setting up UI framework..."},
-    {progress = 0.4, text = "Configuring anti-aim..."},
-    {progress = 0.55, text = "Loading weapon configurations..."},
-    {progress = 0.7, text = "Setting up rage bot..."},
-    {progress = 0.85, text = "Finalizing settings..."},
-    {progress = 1.0, text = "Ready!"}
-}
-
--- Функция для получения имени пользователя с Pastebin
-function visual_functions:fetch_username_from_pastebin()
-    if not http then
-        print("[W.tech] HTTP module not available, using default username")
-        return false
-    end
-    
-    -- Замените YOUR_PASTEBIN_ID на ID вашего Pastebin
-    -- Пример: если ссылка https://pastebin.com/raw/abc123, то ID = "abc123"
-    local pastebin_url = "https://pastebin.com/raw/YOUR_PASTEBIN_ID"
-    
-    http.get(pastebin_url, function(success, response)
-        if success and response.status == 200 then
-            local username = response.body:gsub("%s+", "")  -- Убираем пробелы и переносы строк
-            if username and #username > 0 then
-                obex_data.username = username
-                print("[W.tech] Username loaded from Pastebin: " .. username)
-                
-                -- Обновляем полный текст приветствия в интро
-                if intro[1] then
-                    intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-                end
-            else
-                print("[W.tech] Empty username from Pastebin, using default")
-                -- Используем имя по умолчанию
-                if intro[1] then
-                    intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-                end
-            end
-        else
-            print("[W.tech] Failed to fetch username from Pastebin, using default")
-            -- Используем имя по умолчанию
-            if intro[1] then
-                intro[1].full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-            end
-        end
-    end)
-end
-
-function visual_functions:welcome_to_starlight()
-   local w,h = client.screen_size()
-   
-    -- Создаем полное сообщение с именем по умолчанию
-    local full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-    
-    intro[#intro + 1] ={
-        full_message = full_message,  -- Полное сообщение с именем
-        main_alpha = 0,  -- Альфа для основного сообщения
-        success_alpha = 0,  -- Альфа для сообщения об успешной загрузке
-        timer = 1800,  -- УВЕЛИЧЕНО общее время (с 1200 до 1800)
-        initial_timer = 1800,
-        fade_in_time = 150,    -- Время появления
-        fill_time = 600,       -- Время заполнения круга
-        transition_time = 200, -- Время перехода от основного к успешному сообщению
-        success_hold_time = 550, -- УВЕЛИЧЕНО время показа успешного сообщения (с 150 до 550)
-        fade_out_time = 300,   -- Время исчезновения
-        progress_complete = false,
-        y_offset = 50,  -- Начальное смещение по Y для анимации появления
-        scale = 0.8,    -- Начальный масштаб для анимации
-        x = w / 2 - 150,
-        y = h / 2,
-        bg_alpha = 0, -- Альфа для фона (добавлено для отдельного управления)
-        show_success_message = false, -- Флаг для отображения сообщения об успешной загрузке
-        main_y_offset = 0, -- Отдельное смещение для основного сообщения
-        success_y_offset = 30, -- Начальное смещение для сообщения об успешной загрузке
-        current_stage_index = 1, -- Текущий этап загрузки
-        stage_alpha = 0, -- Альфа для текста этапа загрузки
-        stage_timer = 0, -- Таймер для смены этапов
-        checkmark_animation = 0, -- Прогресс анимации галочки (0-1)
-        checkmark_pulse = 0, -- Пульсация галочки
-    }
-    
-    -- Пытаемся получить имя с Pastebin после создания интро
-    if http then
-        visual_functions:fetch_username_from_pastebin()
-    end
-end
-
-visual_functions.welcome_to_starlight()
-
-function visual_functions:get_current_stage(progress)
-    for i = #loading_stages, 1, -1 do
-        if progress >= loading_stages[i].progress then
-            return loading_stages[i]
-        end
-    end
-    return loading_stages[1]
-end
-
-function visual_functions:start_intro()
-    local w,h = client.screen_size()
-    for i = 1,#intro do
-        if intro[i] == nil then break end
-
-        -- Рассчитываем прошедшее время
-        local time_passed = intro[i].initial_timer - intro[i].timer
-        
-        -- ФАЗА 1: Появление (fade-in)
-        if time_passed < intro[i].fade_in_time then
-            local fade_in_progress = time_passed / intro[i].fade_in_time
-            intro[i].main_alpha = lerp(0, 255, fade_in_progress)
-            intro[i].bg_alpha = lerp(0, 200, fade_in_progress)
-            intro[i].main_y_offset = lerp(50, 0, fade_in_progress)
-            intro[i].scale = lerp(0.8, 1.0, fade_in_progress)
-            intro[i].progress = 0
-            intro[i].progress_complete = false
-            intro[i].show_success_message = false
-            intro[i].success_alpha = 0
-            intro[i].success_y_offset = 30
-            intro[i].stage_alpha = lerp(0, 255, fade_in_progress)
-            intro[i].current_stage_index = 1
-            intro[i].stage_timer = 0
-            intro[i].checkmark_animation = 0
-            intro[i].checkmark_pulse = 0
-        
-        -- ФАЗА 2: Загрузка (fill)
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time then
-            local fill_progress = (time_passed - intro[i].fade_in_time) / intro[i].fill_time
-            intro[i].main_alpha = 255
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = 0
-            intro[i].scale = 1.0
-            intro[i].progress = fill_progress
-            intro[i].progress_complete = false
-            intro[i].show_success_message = false
-            intro[i].success_alpha = 0
-            intro[i].success_y_offset = 30
-            intro[i].stage_alpha = 255
-            
-            -- Обновляем текущий этап загрузки
-            local current_stage = visual_functions:get_current_stage(fill_progress)
-            
-            -- Находим индекс текущего этапа
-            for idx, stage in ipairs(loading_stages) do
-                if stage == current_stage then
-                    intro[i].current_stage_index = idx
-                    break
-                end
-            end
-            
-            -- Увеличиваем таймер для анимации текста
-            intro[i].stage_timer = intro[i].stage_timer + 1
-            
-            -- Показываем сообщение об успешной загрузке когда прогресс 100%
-            if fill_progress >= 1.0 then
-                intro[i].show_success_message = true
-                intro[i].success_alpha = 0
-            end
-        
-        -- ФАЗА 3: Переход от основного к успешному сообщению
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time then
-            local transition_progress = (time_passed - (intro[i].fade_in_time + intro[i].fill_time)) / intro[i].transition_time
-            
-            -- Исчезает основное сообщение, появляется сообщение об успешной загрузке
-            intro[i].main_alpha = lerp(255, 0, transition_progress)
-            intro[i].success_alpha = lerp(0, 255, transition_progress)
-            intro[i].stage_alpha = lerp(255, 0, transition_progress)
-            
-            -- Анимация галочки появляется с небольшим запаздыванием
-            intro[i].checkmark_animation = lerp(0, 1, math.max(0, (transition_progress - 0.3) / 0.7))
-            
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = lerp(0, -30, transition_progress)  -- Основное уезжает вверх
-            intro[i].success_y_offset = lerp(30, 0, transition_progress)  -- Успешное приезжает на место
-            intro[i].scale = 1.0
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-        
-        -- ФАЗА 4: Удержание успешного сообщения (УВЕЛИЧЕНО ВРЕМЯ) - С ПУЛЬСАЦИЕЙ ГАЛОЧКИ
-        elseif time_passed < intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time then
-            local hold_progress = (time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time)) / intro[i].success_hold_time
-            
-            intro[i].main_alpha = 0
-            intro[i].success_alpha = 255  -- Постоянная видимость успешного сообщения
-            intro[i].bg_alpha = 200
-            intro[i].main_y_offset = -30
-            intro[i].success_y_offset = 0  -- Успешное сообщение на месте
-            intro[i].scale = 1.0
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-            intro[i].stage_alpha = 0
-            intro[i].checkmark_animation = 1
-            
-            -- Пульсация галочки (0-1)
-            intro[i].checkmark_pulse = 0.5 + 0.5 * math.sin(globals.realtime() * 3)
-        
-        -- ФАЗА 5: Плавное исчезновение успешного сообщения
-        else
-            local time_in_fade_out = time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time)
-            local fade_out_progress = time_in_fade_out / intro[i].fade_out_time
-            
-            -- Убедимся, что fade_out_progress не превышает 1
-            fade_out_progress = math.min(fade_out_progress, 1.0)
-            
-            intro[i].main_alpha = 0  -- Основное уже исчезло
-            intro[i].success_alpha = lerp(255, 0, fade_out_progress)
-            intro[i].bg_alpha = lerp(200, 0, fade_out_progress)
-            intro[i].main_y_offset = -30
-            intro[i].success_y_offset = lerp(0, -30, fade_out_progress)  -- Успешное уезжает вверх
-            intro[i].scale = lerp(1.0, 0.9, fade_out_progress)
-            intro[i].progress = 1.0
-            intro[i].progress_complete = true
-            intro[i].show_success_message = true
-            intro[i].stage_alpha = 0
-            intro[i].checkmark_animation = lerp(1, 0, fade_out_progress)
-            intro[i].checkmark_pulse = 0
-        end
-
-        -- Фон с увеличенным затемнением при запуске
-        renderer.rectangle(0, 0, w, h, 0, 0, 0, intro[i].bg_alpha)
-        
-        -- ============================================
-        -- ОСНОВНОЕ СООБЩЕНИЕ (исчезает в фазе 3)
-        -- ============================================
-        if intro[i].main_alpha > 0 then
-            -- Рассчитываем позицию с учетом анимации
-            local current_y = h / 2 + intro[i].main_y_offset
-            
-            -- СИМБОЛ (◣ _ ◢) НА 15 ПИКСЕЛЕЙ ВЫШЕ (РАСПОЛОЖЕН ЧУТЬ НИЖЕ, ЧЕМ БЫЛО)
-            local symbol_y = current_y - 15  -- Изменено с 25 на 15
-            
-            -- Рисуем символ с плавным появлением и красным цветом (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
-            renderer.text(w / 2, symbol_y, 
-                         255, 0, 0, intro[i].main_alpha, "c", 0,  -- Изменено с "c+" на "c"
-                         "(◣ _ ◢)")
-            
-            -- Тень символа для объемности (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
-            renderer.text(w / 2 + 2, symbol_y + 2, 
-                         0, 0, 0, intro[i].main_alpha * 0.3, "c", 0,  -- Изменено с "c+" на "c"
-                         "(◣ _ ◢)")
-            
-            -- Основной текст с анимацией
-            local full_message = intro[i].full_message or "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-            
-            -- Разделяем текст на "+W.tech" и остальную часть
-            local prefix = "+W.tech"
-            local suffix = full_message:sub(#prefix + 1)
-            
-            -- Измеряем ширину префикса
-            local prefix_width = renderer.measure_text(nil, prefix)
-            
-            -- Рассчитываем начальную позицию для центрирования всей строки
-            local total_width = renderer.measure_text(nil, full_message)
-            local start_x = w / 2 - total_width / 2
-            
-            -- Рисуем "+W.tech" красным цветом
-            renderer.text(start_x, current_y, 
-                         255, 0, 0, intro[i].main_alpha, nil, 0,
-                         prefix)
-            
-            -- Рисуем остальной текст белым цветом
-            renderer.text(start_x + prefix_width, current_y, 
-                         255, 255, 255, intro[i].main_alpha, nil, 0,
-                         suffix)
-            
-            -- Текст сборки
-            local build_text = "build "
-            local beta_text = string.upper(obex_data.build)
-            
-            -- Измеряем ширину текста "build "
-            local build_width = renderer.measure_text(nil, build_text)
-            local beta_width = renderer.measure_text(nil, beta_text)
-            
-            -- Рассчитываем начальную позицию для центрирования всей строки
-            local total_build_width = build_width + beta_width
-            local build_start_x = w / 2 - total_build_width / 2
-            
-            -- Рисуем "build " белым цветом
-            renderer.text(build_start_x, current_y + 25, 
-                         255, 255, 255, intro[i].main_alpha, nil, 0, 
-                         build_text)
-            
-            -- Рисуем "BETA" красным цветом
-            renderer.text(build_start_x + build_width, current_y + 25, 
-                         255, 0, 0, intro[i].main_alpha, nil, 0,
-                         beta_text)
-
-            -- Радиус круга
-            local radius = 10 * intro[i].scale
-            
-            -- Позиция круга с учетом анимации
-            local circle_y = current_y + 50
-            
-            -- Рисуем фон круга (полный круг) с плавным появлением
-            renderer.circle_outline(w / 2, circle_y, 
-                                   40, 40, 40, intro[i].main_alpha, 
-                                   radius, 0, 1, 2 * intro[i].scale)
-            
-            -- Рисуем заполняющуюся часть (процент заполнения) с плавным появлением
-            if intro[i].progress > 0 then
-                renderer.circle_outline(w / 2, circle_y, 
-                                       255, 0, 0, intro[i].main_alpha,
-                                       radius, 0, intro[i].progress, 2 * intro[i].scale)
-            end
-            
-            -- Отображаем проценты под кругом
-            local percent = math.floor(intro[i].progress * 100)
-            renderer.text(w / 2, circle_y + radius + 15, 
-                         255, 255, 255, intro[i].main_alpha, "c", 0, 
-                         percent .. "%")
-            
-            -- ============================================
-            -- ТЕКСТ ТЕКУЩЕГО ЭТАПА ЗАГРУЗКИ ПОД ПРОГРЕСС-БАРОМ
-            -- ============================================
-            if intro[i].stage_alpha > 0 then
-                local stage_text_y = circle_y + radius + 40
-                
-                -- Получаем текущий этап загрузки
-                local current_stage = visual_functions:get_current_stage(intro[i].progress)
-                
-                if current_stage then
-                    -- Декоративные точки перед текстом (анимированные)
-                    local dots = ""
-                    local dot_count = math.floor((intro[i].stage_timer % 30) / 10)
-                    
-                    for j = 1, 3 do
-                        if j <= dot_count then
-                            dots = dots .. "."
-                        else
-                            dots = dots .. " "
-                        end
-                    end
-                    
-                    -- Текст этапа загрузки
-                    local stage_text = current_stage.text
-                    local full_stage_text = dots .. " " .. stage_text
-                    local stage_width = renderer.measure_text(nil, full_stage_text)
-                    local stage_x = w / 2 - stage_width / 2
-                    
-                    -- Рисуем текст этапа загрузки
-                    renderer.text(stage_x, stage_text_y, 
-                                 200, 200, 200, intro[i].stage_alpha, nil, 0,
-                                 full_stage_text)
-                    
-                    -- Декоративная линия над текстом этапа
-                    local line_width = 150
-                    local line_x = w / 2 - line_width / 2
-                    renderer.rectangle(line_x, stage_text_y - 5, line_width, 1, 
-                                     100, 100, 100, intro[i].stage_alpha * 0.3)
-                end
-            end
-        end
-        
-        -- ============================================
-        -- СООБЩЕНИЕ ОБ УСПЕШНОЙ ЗАГРУЗКЕ: СИМВОЛ (◣ _ ◢) НАД ТЕКСТОМ "+W.tech recode loaded"
-        -- ============================================
-        if intro[i].show_success_message and intro[i].success_alpha > 0 then
-            -- Позиционируем сообщение по центру экрана с учетом анимации
-            local message_y = h / 2 + intro[i].success_y_offset
-            
-            -- 1. СИМБОЛ (◣ _ ◢) НАД ТЕКСТОМ (+20 пикселей выше) (УМЕНЬШЕННЫЙ РАЗМЕР)
-            local symbol_text = "(◣ _ ◢)"
-            
-            -- Рисуем символ красным цветом с центрированием (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
-            renderer.text(w / 2, message_y - 20, 
-                         255, 0, 0, intro[i].success_alpha, "c", 0,  -- Изменено с "c+" на "c"
-                         symbol_text)
-            
-            -- 2. ОСНОВНАЯ НАДПИСЬ: "+W.tech recode loaded" ПОД СИМВОЛОМ
-            -- Разделяем на части для разного цвета
-            local prefix = "+W.tech"
-            local recode_text = " recode "
-            local loaded_text = " loaded "
-            
-            -- Измеряем ширину каждой части
-            local prefix_width = renderer.measure_text(nil, prefix)
-            local recode_width = renderer.measure_text(nil, recode_text)
-            local loaded_width = renderer.measure_text(nil, loaded_text)
-            
-            -- Рассчитываем общую ширину и начальную позицию (без галочки)
-            local total_width = prefix_width + recode_width + loaded_width
-            local start_x = w / 2 - total_width / 2
-            
-            -- Рисуем "+W.tech" красным цветом
-            renderer.text(start_x, message_y, 
-                         255, 0, 0, intro[i].success_alpha, nil, 0,
-                         prefix)
-            
-            -- Рисуем " recode " БЕЛЫМ цветом
-            renderer.text(start_x + prefix_width, message_y, 
-                         255, 255, 255, intro[i].success_alpha, nil, 0,
-                         recode_text)
-            
-            -- Рисуем " loaded " белым цветом
-            renderer.text(start_x + prefix_width + recode_width, message_y, 
-                         255, 255, 255, intro[i].success_alpha, nil, 0,
-                         loaded_text)
-            
-            -- 3. КРАСИВАЯ АНИМИРОВАННАЯ ГАЛОЧКА
-            local checkmark_x = start_x + total_width + 5
-            local checkmark_y = message_y
-            
-            -- Базовый размер галочки
-            local base_size = 12
-            
-            -- Анимация масштаба галочки
-            local checkmark_scale = intro[i].checkmark_animation * (1 + 0.1 * intro[i].checkmark_pulse)
-            
-            -- Цвет галочки с пульсацией
-            local green_intensity = 150 + 105 * intro[i].checkmark_pulse
-            local checkmark_alpha = intro[i].success_alpha * intro[i].checkmark_animation
-            
-            -- Рисуем свечение/тень галочки (3 слоя для объемности)
-            for offset = 1, 3 do
-                local glow_alpha = checkmark_alpha * (0.3 - 0.1 * offset)
-                renderer.text(checkmark_x + offset, checkmark_y + offset, 
-                             0, green_intensity, 0, glow_alpha, nil, 0,
-                             "✓")
-            end
-            
-            -- Основная галочка с анимацией
-            renderer.text(checkmark_x, checkmark_y, 
-                         0, green_intensity, 0, checkmark_alpha, nil, 0,
-                         "✓")
-            
-            -- Блестящий эффект на галочке (маленькая точка)
-            if intro[i].checkmark_animation > 0.5 then
-                local sparkle_alpha = checkmark_alpha * intro[i].checkmark_pulse
-                renderer.text(checkmark_x + 3, checkmark_y - 3, 
-                             255, 255, 255, sparkle_alpha, nil, 0,
-                             ".")
-            end
-            
-            -- 4. ПОЛОСКА-РАЗДЕЛИТЕЛЬ (ТАКАЯ ЖЕ, КАК В 1 ЭТАПЕ)
-            local line_width = 150
-            local line_x = w / 2 - line_width / 2
-            local line_y = message_y + 20  -- 5 пикселей выше текста "Good Luck !"
-            
-            -- Рисуем декоративную линию
-            renderer.rectangle(line_x, line_y, line_width, 1, 
-                             100, 100, 100, intro[i].success_alpha * 0.3)
-            
-            -- 5. ТЕКСТ "Good Luck !" СНИЗУ (ЧУТЬ НИЖЕ ПОЛОСКИ)
-            local good_luck_text = "Good Luck !"
-            local good_luck_width = renderer.measure_text(nil, good_luck_text)
-            local good_luck_x = w / 2 - good_luck_width / 2
-            
-            -- Рисуем текст "Good Luck !" белым цветом
-            renderer.text(good_luck_x, message_y + 25, 
-                         255, 255, 255, intro[i].success_alpha * 0.8, nil, 0,
-                         good_luck_text)
-        end
-        -- ============================================
-
-        intro[i].timer = intro[i].timer - 1 
-
-        -- Удаляем интро, когда альфа становится 0
-        if intro[i].main_alpha <= 0 and intro[i].success_alpha <= 0 and intro[i].timer < intro[i].initial_timer - intro[i].fade_out_time then
-            table.remove(intro,#intro)
-        end
-    end
-end
-
--- Обработчик экрана загрузки
-client.set_event_callback("paint", function()
-    visual_functions.start_intro()
-end)
-
--- Вызываем загрузку имени при запуске скрипта
-client.delay_call(0, function()
-    if http then
-        visual_functions:fetch_username_from_pastebin()
-    end
-end)
--- =========== КОНЕЦ КОДА ЭКРАНА ЗАГРУЗКИ ===========
 
 local client_set_event_callback, client_unset_event_callback = client.set_event_callback, client.unset_event_callback
 local entity_get_local_player, entity_get_player_weapon, entity_get_prop = entity.get_local_player, entity.get_player_weapon, entity.get_prop
@@ -573,7 +81,7 @@ end
 local settings = {}
 local anti_aim_settings = {}
 local anti_aim_states = {'Global', 'Standing', 'Moving', 'Slow motion', 'Crouching', 'Crouching & moving', 'In air', 'In air & crouching', 'No exploits', 'On use'}
-local anti_aim_different = {'', ' ', '  ', '   ', '    ', '     ', '      ', '       ', '        ', '         '}
+local anti_aim_different = {'', ' ', '  ', '   ', '    ', '     ', '      ', '       ', '        ', '         '}
 
 current_tab = ui.new_combobox('AA', 'Anti-aimbot angles', 'Tabs', {'Home', 'Anti-Aim', 'Misc', 'Visuals'})
 
@@ -1127,6 +635,7 @@ local function on_paint()
 
     renderer.text(x, y, r, g, b, 255, "", 0, output)
 end
+client.set_event_callback("paint", on_paint)
 
 client.set_event_callback('paint_ui', function()
     if entity.get_local_player() == nil then cheked_ticks = 0 end
@@ -1253,7 +762,7 @@ local killsay_pharases = {
     {'1 нИкЧеМнЫй ПиДоРаС', '1 гЛуПыЙ ПиДоРаС'},
     {'1 OwNeD bY +W TeCh', '1 СсаНыЙ бИч'},
     {'ПрИкУпИ +W tEcH а То ПаДаЕшЬ', '1 СпИ РоТоВыЕбАнЫй ХуЕсОс'},
-    {'1 ШаЛаВа На КоЛеНи', 'О нЕт ЭтО чУдИщЕ оПяТь пАдАеТ нА мОй ДиК уЖааС'}
+    {'1 ШаЛаВа На КоЛеНи', 'О нЕт ЭтО чУдИщЕ оПяТь пАдАеТ нА мОй ДиК уЖАаС'}
 }
     
 local death_say = {
@@ -1262,7 +771,7 @@ local death_say = {
     {'что ты делаешь', 'моча умалишенная'},
     {'бля', 'я стрелял вообще или че?'},
     {'чит подвел'},
-    {'БЛЯЯЯЯЯЯЯЯЯЯЯТЬ', 'как же ты меня заебал'},
+    {'БЛЯЯЯЯЯЯЯЯЯЯЯЯТЬ', 'как же ты меня заебал'},
     {'ну и зачем', 'дал бы клип', 'пиздец клоун'},
     {'ахахахах', 'ну да', 'опять сын шлюхи убил бестолковый'},
     {'м', 'пон)', 'найс чит'},
@@ -1342,4 +851,719 @@ client.set_event_callback('player_death', function(e)
 
         for i=1, #phase_block do
             local phase = phase_block[i]
-            local interphrase_delay
+            local interphrase_delay = #phase_block[i]/20*delay
+            deathsay_delay = deathsay_delay + interphrase_delay
+
+            delayed_msg(deathsay_delay, phase)
+        end
+    end
+end)
+    
+--
+
+--
+local clantag = {
+    steam = steamworks.ISteamFriends,
+    prev_ct = "",
+    orig_ct = "",
+    enb = false,
+}
+
+local function get_original_clantag()
+    local clan_id = cvar.cl_clanid.get_int()
+    if clan_id == 0 then return "\0" end
+
+    local clan_count = clantag.steam.GetClanCount()
+    for i = 0, clan_count do 
+        local group_id = clantag.steam.GetClanByIndex(i)
+        if group_id == clan_id then
+            return clantag.steam.GetClanTag(group_id)
+        end
+    end
+end
+
+local clantag_anim = function(text, indices)
+
+    time_to_ticks = function(t)
+        return math.floor(0.5 + (t / globals.tickinterval()))
+    end
+
+    local text_anim = "               " .. text ..                       "" 
+    local tickinterval = globals.tickinterval()
+    local tickcount = globals.tickcount() + time_to_ticks(client.latency())
+    local i = tickcount / time_to_ticks(0.3)
+    i = math.floor(i % #indices)
+    i = indices[i+1]+1
+    return string.sub(text_anim, i, i+15)
+end
+
+local function clantag_set()
+    local lua_name = "+W.tech"
+    if ui.get(clantagchanger) then
+        if ui.get(ui.reference("Misc", "Miscellaneous", "Clan tag spammer")) then ui.set(ui.reference("Misc", "Miscellaneous", "Clan tag spammer"), false) end
+
+		local clan_tag = clantag_anim(lua_name, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 11, 11, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25})
+
+        if entity.get_prop(entity.get_game_rules(), "m_gamePhase") == 5 then
+            clan_tag = clantag_anim('+W.tech', {13})
+            client.set_clan_tag(clan_tag)
+        elseif entity.get_prop(entity.get_game_rules(), "m_timeUntilNextPhaseStarts") ~= 0 then
+            clan_tag = clantag_anim('+W.tech', {13})
+            client.set_clan_tag(clan_tag)
+        elseif clan_tag ~= clantag.prev_ct  then
+            client.set_clan_tag(clan_tag)
+        end
+
+        clantag.prev_ct = clan_tag
+        clantag.enb = true
+    elseif clantag.enb == true then
+        client.set_clan_tag(get_original_clantag())
+        clantag.enb = false
+    end
+end
+
+clantag.paint = function()
+    if entity.get_local_player() ~= nil then
+        if globals.tickcount() % 2 == 0 then
+            clantag_set()
+        end
+    end
+end
+
+clantag.run_command = function(e)
+    if entity.get_local_player() ~= nil then 
+        if e.chokedcommands == 0 then
+            clantag_set()
+        end
+    end
+end
+
+clantag.player_connect_full = function(e)
+    if client.userid_to_entindex(e.userid) == entity.get_local_player() then 
+        clantag.orig_ct = get_original_clantag()
+    end
+end
+
+clantag.shutdown = function()
+    client.set_clan_tag(get_original_clantag())
+end
+
+client.set_event_callback("paint", clantag.paint)
+client.set_event_callback("run_command", clantag.run_command)
+client.set_event_callback("player_connect_full", clantag.player_connect_full)
+client.set_event_callback("shutdown", clantag.shutdown)
+--
+
+
+--[[client.set_event_callback('console_input', function(text)
+    if string.find(text, '//export') then
+        local code = {{}}
+
+        for i, integers in pairs(data.integers) do
+            table.insert(code[1], ui.get(integers))
+        end
+
+        clipboard.set(base64.encode(json.stringify(code)))
+    elseif string.find(text, '//import') then
+        import(clipboard.get())
+    elseif string.find(text, '//default') then
+        http.get('https://pastebin.com/raw/xJy4ipac', function(success, response)
+            if not success or response.status ~= 200 then return end
+
+            import(response.body)
+        end)
+    end
+end)]]
+
+client.set_event_callback('net_update_end', function()
+    if entity.get_local_player() ~= nil then
+        is_defensive_active = is_defensive(entity.get_local_player())
+    end
+end)
+
+--fastladder
+client.set_event_callback('setup_command', function(cmd)
+    if ui.get(fastladder) then
+        local pitch, yaw = client.camera_angles()
+        if entity.get_prop(entity.get_local_player(), "m_MoveType") == 9 then
+            cmd.yaw = math.floor(cmd.yaw+0.5)
+            cmd.roll = 0
+            
+            if cmd.forwardmove > 0 then
+                if pitch < 45 then
+
+                    cmd.pitch = 89
+                    cmd.in_moveright = 1
+                    cmd.in_moveleft = 0
+                    cmd.in_forward = 0
+                    cmd.in_back = 1
+
+                    if cmd.sidemove == 0 then
+                        cmd.yaw = cmd.yaw + 90
+                    end
+
+                    if cmd.sidemove < 0 then
+                        cmd.yaw = cmd.yaw + 150
+                    end
+
+                    if cmd.sidemove > 0 then
+                        cmd.yaw = cmd.yaw + 30
+                    end
+                end 
+            end
+
+            if cmd.forwardmove < 0 then
+                cmd.pitch = 89
+                cmd.in_moveleft = 1
+                cmd.in_moveright = 0
+                cmd.in_forward = 1
+                cmd.in_back = 0
+                if cmd.sidemove == 0 then
+                    cmd.yaw = cmd.yaw + 90
+                end
+                if cmd.sidemove > 0 then
+                    cmd.yaw = cmd.yaw + 150
+                end
+                if cmd.sidemove < 0 then
+                    cmd.yaw = cmd.yaw + 30
+                end
+            end
+
+        end
+    end
+end)
+
+--legbreaker
+local ref = {
+    leg_movement = ui.reference('AA', 'Other', 'Leg movement')
+}
+
+local ab = {}
+
+ab.pre_render = function()
+    if ui.get(anim_breakerx) then
+        local local_player = entity.get_local_player()
+        if not entity.is_alive(local_player) then return end
+
+        entity.set_prop(local_player, "m_flPoseParameter", client.random_float(0.8/10, 1), 0)
+        ui.set(ref.leg_movement, client.random_int(1, 2) == 1 and "Off" or "Always slide")
+    end
+end
+
+ab.setup_command = function(e)
+    if not ui.get(anim_breakerx) then return end
+
+    local local_player = entity.get_local_player()
+    if not entity.is_alive(local_player) then return end
+
+    ui.set(ref.leg_movement, 'Always slide')
+end
+
+local ui_callback = function(c)
+    local enabled, addr = ui.get(c), ''
+
+    if not enabled then
+        addr = 'un'
+    end
+    
+    local _func = client[addr .. 'set_event_callback']
+
+    _func('pre_render', ab.pre_render)
+    _func('setup_command', ab.setup_command)
+end
+
+ui.set_callback(master_switch, ui_callback)
+ui_callback(master_switch)
+
+local is_on_ground = false
+
+--- @region: process main work
+--
+client.set_event_callback("setup_command", function()
+    if entity.get_local_player() == nil then return end
+
+    gamerulesproxy = entity.get_all("CCSGameRulesProxy")[1]
+    warmup = entity.get_prop(gamerulesproxy,"m_bWarmupPeriod")
+    --print(warmup)
+  
+    if ui.get(settings.warmup_disabler) and warmup == 1 then
+        ui.set(reference.body_yaw[1], 'Off')
+        ui.set(reference.yaw[2], math.random(-180, 180))
+        ui.set(reference.yaw_jitter[1], 'Random')
+        ui.set(reference.pitch[1], 'Off')
+    end
+end)
+--
+
+client.set_event_callback("setup_command", function(cmd)
+    is_on_ground = cmd.in_jump == 0
+
+    if ui.get(anim_breakerx) then
+        ui.set(ref.leg_movement, cmd.command_number % 3 == 0 and "Off" or "Always slide")
+    end
+end)
+
+client.set_event_callback("pre_render", function()
+    local self = entity.get_local_player()
+    if not self or not entity.is_alive(self) then
+        return
+    end
+
+    local self_index = c_entity.new(self)
+    local self_anim_state = self_index:get_anim_state()
+
+    if not self_anim_state then
+        return
+    end
+
+    if ui.get(anim_breakerx) then
+        entity.set_prop(self, "m_flPoseParameter", E_POSE_PARAMETERS.STAND, globals.tickcount() % 4 > 1 and 5 / 10 or 1)
+    
+        local self_anim_overlay = self_index:get_anim_overlay(12)
+        if not self_anim_overlay then
+            return
+        end
+
+        local x_velocity = entity.get_prop(self, "m_vecVelocity[0]")
+        if math.abs(x_velocity) >= 3 then
+            self_anim_overlay.weight = 100 / 100
+        end
+    end
+end)
+--- @endregion
+
+--scope
+local second_zoom do
+    second_zoom = { }
+
+    local old_value
+
+    local function callback(item)
+        local fn = client_set_event_callback
+        local value = ui_get(item)
+
+        if not value then
+            second_zoom.shutdown()
+            fn = client_unset_event_callback
+        end
+
+        ui_set_visible(scope_fov, value)
+
+        fn("shutdown", second_zoom.shutdown)
+        fn("pre_render", second_zoom.pre_render)
+    end
+
+    local function reset()
+        if old_value == nil then
+            return
+        end
+
+        ui_set(override_zoom_fov, old_value)
+        old_value = nil
+    end
+
+    local function update()
+        if old_value == nil then
+            old_value = ui_get(override_zoom_fov)
+        end
+
+        ui_set(override_zoom_fov, ui_get(scope_fov))
+    end
+
+    
+    client.set_event_callback('paint', function()
+
+    if ui.get(scope_fov) == 0 then
+        return
+    end
+
+    if ui.get(scope_fov) > 0 then
+            local me = entity_get_local_player()
+
+            if me == nil then
+                return
+            end
+
+            local wpn = entity_get_player_weapon(me)
+
+            if wpn == nil then
+                return
+            end
+
+            local zoom_level = entity_get_prop(wpn, "m_zoomLevel")
+
+            if zoom_level ~= 2 then
+                reset()
+                return
+            end
+
+            update()
+        end
+    end)
+end
+--
+
+client.set_event_callback('paint', function()
+    cvar.r_aspectratio:set_float(ui.get(aspectratio)/100)
+end)
+--
+
+local queue = {}
+
+local function aim_firec(c)
+	queue[globals.tickcount()] = {c.x, c.y, c.z, globals.curtime() + 2}
+end
+
+local function paintc(c)
+	if ui.get(hitmarker) then
+        for tick, data in pairs(queue) do
+            if globals.curtime() <= data[4] then
+                local x1, y1 = renderer.world_to_screen(data[1], data[2], data[3])
+                if x1 ~= nil and y1 ~= nil then
+                    renderer.line(x1 - 6, y1, x1 + 6, y1, 34, 214, 132, 255)
+                    renderer.line(x1, y1 - 6, x1, y1 + 6, 108, 182, 203, 255)
+                end
+            end
+        end
+    end
+end
+
+client.set_event_callback("aim_fire", aim_firec)
+client.set_event_callback("paint", paintc)
+client.set_event_callback("round_prestart", function() queue = {} end)
+--
+
+local hitgroup_names = {"generic", "head", "chest", "stomach", "left arm", "right arm", "left leg", "right leg", "neck", "?", "gear"}
+local weapon_to_verb = { knife = 'Knifed', hegrenade = 'Naded', inferno = 'Burned' }
+
+client.set_event_callback('aim_hit', function(e)
+	if not ui.get(master_switch) or e.id == nil then
+		return
+	end
+
+	local group = hitgroup_names[e.hitgroup + 1] or "?"
+
+	client.color_log(124, 252, 0, "+W.tech ~\0")
+	client.color_log(200, 200, 200, " Hit\0")
+	client.color_log(124, 252, 0, string.format(" %s\0", entity.get_player_name(e.target)))
+	client.color_log(200, 200, 200, " in the\0")
+	client.color_log(124, 252, 0, string.format(" %s\0", group))
+	client.color_log(200, 200, 200, " for\0")
+	client.color_log(124, 252, 0, string.format(" %s\0", e.damage))
+	client.color_log(200, 200, 200, " damage\0")
+	client.color_log(200, 200, 200, " (\0")
+	client.color_log(124, 252, 0, string.format("%s\0", entity.get_prop(e.target, "m_iHealth")))
+	client.color_log(200, 200, 200, " health remaining)")
+end)
+
+client.set_event_callback("aim_miss", function(e)
+	if not ui.get(master_switch) then
+		return
+	end
+
+	local group = hitgroup_names[e.hitgroup + 1] or "?"
+
+	client.color_log(255, 0, 0, "+W.tech ~\0")
+	client.color_log(200, 200, 200, " Missed shot in\0")
+	client.color_log(255, 0, 0, string.format(" %s\'s\0", entity.get_player_name(e.target)))
+	client.color_log(255, 0, 0, string.format(" %s\0", group))
+	client.color_log(200, 200, 200, " due to\0")
+	client.color_log(255, 0, 0, string.format(" %s", e.reason))
+end)
+
+client.set_event_callback('player_hurt', function(e)
+	if not ui.get(master_switch) then
+		return
+	end
+	
+	local attacker_id = client.userid_to_entindex(e.attacker)
+
+	if attacker_id == nil or attacker_id ~= entity.get_local_player() then
+        return
+    end
+
+	if weapon_to_verb[e.weapon] ~= nil then
+        local target_id = client.userid_to_entindex(e.userid)
+		local target_name = entity.get_player_name(target_id)
+
+		--print(string.format("%s %s for %i damage (%i remaining)", weapon_to_verb[e.weapon], string.lower(target_name), e.dmg_health, e.health))
+		client.color_log(124, 252, 0, "+W.tech ~\0")
+		client.color_log(200, 200, 200, string.format(" %s\0", weapon_to_verb[e.weapon]))
+		client.color_log(124, 252, 0, string.format(" %s\0", target_name))
+		client.color_log(200, 200, 200, " for\0")
+		client.color_log(124, 252, 0, string.format(" %s\0", e.dmg_health))
+		client.color_log(200, 200, 200, " damage\0")
+		client.color_log(200, 200, 200, " (\0")
+		client.color_log(124, 252, 0, string.format("%s\0", e.health))
+		client.color_log(200, 200, 200, " health remaining)")
+	end
+end)
+
+client.set_event_callback('shutdown', function()
+    ui.set_visible(reference.pitch[1], true)
+    ui.set_visible(reference.yaw_base, true)
+    ui.set_visible(reference.yaw[1], true)
+    ui.set_visible(reference.body_yaw[1], true)
+    ui.set_visible(reference.edge_yaw, true)
+    ui.set_visible(reference.freestanding[1], true)
+    ui.set_visible(reference.freestanding[2], true)
+    ui.set_visible(reference.roll, true)
+
+    cvar.r_aspectratio:set_float(0)
+
+    ui.set(override_zoom_fov, 0)
+    ui.set(reference.pitch[1], 'Off')
+    ui.set(reference.pitch[2], 0)
+    ui.set(reference.yaw_base, 'Local view')
+    ui.set(reference.yaw[1], 'Off')
+    ui.set(reference.yaw[2], 0)
+    ui.set(reference.yaw_jitter[1], 'Off')
+    ui.set(reference.yaw_jitter[2], 0)
+    ui.set(reference.body_yaw[1], 'Off')
+    ui.set(reference.body_yaw[2], 0)
+    ui.set(reference.freestanding_body_yaw, false)
+    ui.set(reference.edge_yaw, false)
+    ui.set(reference.freestanding[1], false)
+    ui.set(reference.freestanding[2], 'On hotkey')
+    ui.set(reference.roll, 0)
+end)
+
+
+
+local IsNewClientAvailable = panorama.loadstring([[
+	var oldClientStatus = NewsAPI.IsNewClientAvailable;
+
+	return {
+		disable: function(){
+			NewsAPI.IsNewClientAvailable = function(){ return false };
+		},
+		restore: function(){
+            NewsAPI.IsNewClientAvailable = oldClientStatus;
+		}
+	}
+]])()
+
+IsNewClientAvailable.disable()
+
+client.set_event_callback("shutdown", function()
+	IsNewClientAvailable.restore()
+end)
+
+-- ML model for local resolver
+local ml_model = { players = {} }
+local sample_limit = 64
+local model_dirty = false
+
+local function normalize_angle(a)
+    if a == nil then return 0 end
+    while a > 180 do a = a - 360 end
+    while a < -180 do a = a + 360 end
+    return a
+end
+
+-- detect io availability and fallback to write in the current working directory
+local has_io = type(io) == 'table' and type(io.open) == 'function'
+if not has_io then
+    client.color_log(255, 165, 0, '+W.tech ~\0'); client.color_log(200,200,200, ' File IO unavailable; model persistence disabled')
+end
+local model_path = has_io and '+wtech.json' or nil
+
+local function load_model()
+    if not has_io or model_path == nil then return end
+    local ok, f = pcall(function() return io.open(model_path, 'r') end)
+    if not ok or f == nil then return end
+    local content = f:read('*a')
+    f:close()
+    local status, parsed = pcall(function() return json.parse(content) end)
+    if status and parsed then
+        ml_model = parsed
+    end
+end
+
+local function save_model()
+    if not model_dirty or not has_io or model_path == nil then return end
+    local ok, f = pcall(function() return io.open(model_path, 'w') end)
+    if not ok or f == nil then return end
+    f:write(json.stringify(ml_model))
+    f:close()
+    model_dirty = false
+    client.color_log(124, 252, 0, '+W.tech ~\0'); client.color_log(200,200,200, ' +ᴡ ᴄᴏɴꜰɪᴅᴇɴᴄᴇ: model saved')
+end
+
+local function add_sample(player_key, sample)
+    if player_key == nil then return end
+    if ml_model.players[player_key] == nil then ml_model.players[player_key] = { samples = {}, avg_offset = 0 } end
+    table.insert(ml_model.players[player_key].samples, sample)
+    if #ml_model.players[player_key].samples > sample_limit then table.remove(ml_model.players[player_key].samples, 1) end
+    local sum = 0
+    for _, s in pairs(ml_model.players[player_key].samples) do sum = sum + (s.label or 0) end
+    ml_model.players[player_key].avg_offset = sum / #ml_model.players[player_key].samples
+    model_dirty = true
+end
+
+local function get_player_key(ent)
+    if ent == nil then return nil end
+    -- try to use unique ID if available; else fallback to name
+    local name = entity.get_player_name(ent)
+    return name
+end
+
+local function predict_offset(player_key)
+    local entry = ml_model.players[player_key]
+    if not entry or not entry.avg_offset then return 0 end
+    return entry.avg_offset
+end
+
+local function compute_raw_predicted_yaw(ent)
+    -- base prediction using velocity only, without ML offset
+    if ent == nil or not entity.is_alive(ent) then return nil end
+    local me = entity.get_local_player()
+    if me == nil then return nil end
+    local ex = entity.get_prop(ent, 'm_vecOrigin[0]') or 0
+    local ey = entity.get_prop(ent, 'm_vecOrigin[1]') or 0
+    local ez = entity.get_prop(ent, 'm_vecOrigin[2]') or 0
+    local vx = entity.get_prop(ent, 'm_vecVelocity[0]') or 0
+    local vy = entity.get_prop(ent, 'm_vecVelocity[1]') or 0
+    local vz = entity.get_prop(ent, 'm_vecVelocity[2]') or 0
+    local lx = entity.get_prop(me, 'm_vecOrigin[0]') or 0
+    local ly = entity.get_prop(me, 'm_vecOrigin[1]') or 0
+    local lz = entity.get_prop(me, 'm_vecOrigin[2]') or 0
+    local weight = ui.get(confidence_strength) / 100
+    local factor = 0.2 * weight
+    local predicted_x = ex + vx * factor
+    local predicted_y = ey + vy * factor
+    local delta_x = predicted_x - lx
+    local delta_y = predicted_y - ly
+    local yaw = math.deg(math.atan2(delta_y, delta_x))
+    return normalize_angle(yaw)
+end
+
+local function compute_predicted_yaw(ent)
+    if ent == nil or not entity.is_alive(ent) then return nil end
+    local me = entity.get_local_player()
+    if me == nil then return nil end
+    local yaw = compute_raw_predicted_yaw(ent)
+    -- add ML offset
+    local pkey = get_player_key(ent)
+    local offset = predict_offset(pkey)
+    return normalize_angle(yaw + offset)
+end
+
+-- load model at startup
+load_model()
+
+local function confidence_aim_hit(e)
+    if not ui.get(confidence_checkbox) then return end
+    if not e or not e.target then return end
+
+    local me = entity.get_local_player()
+    if me == nil then return end
+
+    local ent = e.target
+    if not entity.is_alive(ent) then return end
+
+    -- head position
+    local hx, hy, hz = entity.hitbox_position(ent, 0)
+    if not hx then return end
+
+    -- compute yaw to head
+    local lx = entity.get_prop(me, 'm_vecOrigin[0]') or 0
+    local ly = entity.get_prop(me, 'm_vecOrigin[1]') or 0
+    local lz = entity.get_prop(me, 'm_vecOrigin[2]') or 0
+    local dx = hx - lx
+    local dy = hy - ly
+    local yaw_to_head = math.deg(math.atan2(dy, dx))
+
+    -- compute basic predicted yaw
+    local base_pred = compute_raw_predicted_yaw(ent)
+    if base_pred == nil then return end
+
+    local diff = normalize_angle(yaw_to_head - base_pred)
+    local vx = entity.get_prop(ent, 'm_vecVelocity[0]') or 0
+    local vy = entity.get_prop(ent, 'm_vecVelocity[1]') or 0
+    local vz = entity.get_prop(ent, 'm_vecVelocity[2]') or 0
+    local speed = math.sqrt(vx * vx + vy * vy + vz * vz)
+    local sample = { vx = vx, vy = vy, speed = speed, label = diff }
+    local key = get_player_key(ent)
+    add_sample(key, sample)
+end
+
+-- Paint overlay for predictions and stored offsets
+local function confidence_paint()
+    if not ui.get(confidence_checkbox) then return end
+    if not ui.get(confidence_indicator) then return end
+    local players = entity.get_players(true)
+    if players == nil then return end
+    for _, p in pairs(players) do
+        if entity.is_alive(p) and not entity.is_dormant(p) then
+            local pred = compute_predicted_yaw(p)
+            local key = get_player_key(p)
+            local entry = ml_model.players[key]
+            local label = entry and entry.avg_offset or 0
+            local hitx, hity, hitz = entity.hitbox_position(p, 0)
+            if hitx then
+                local sx, sy = renderer.world_to_screen(hitx, hity, hitz)
+                if sx ~= nil and sy ~= nil then
+                    renderer.text(sx, sy - 18, 87, 235, 61, 255, '', 0, string.format('+ᴡ ᴄᴏɴꜰ: %.1f°', pred or 0))
+                    renderer.text(sx, sy - 8, 200, 200, 200, 255, '', 0, string.format('avg offset: %.1f°', label))
+                end
+            end
+            -- optionally apply to the Anti-Aim yaw
+            if ui.get(confidence_apply_to_aa) and pred ~= nil then
+                ui.set(reference.yaw[1], 'Static')
+                ui.set(reference.yaw[2], pred)
+            end
+        end
+    end
+    -- periodic save
+    if model_dirty and globals.realtime() % 5 < 0.02 then
+        save_model()
+    end
+end
+
+-- toggle anti-aim correction setting when confidence is toggled
+ui.set_callback(confidence_checkbox, function()
+    -- toggle RAGE anti-aim correction and event callbacks
+    if rage_anti_aim_correction ~= nil then
+        if ui.get(confidence_checkbox) then
+            _orig_anti_aim_correction = ui.get(rage_anti_aim_correction)
+            ui.set(rage_anti_aim_correction, false)
+            client.color_log(124, 252, 0, '+W.tech ~\0'); client.color_log(200,200,200, ' +ᴡ ᴄᴏɴꜰɪᴅᴇɴᴄᴇ enabled: Anti-aim correction disabled (RAGE -> Other)')
+        else
+            if _orig_anti_aim_correction ~= nil then ui.set(rage_anti_aim_correction, _orig_anti_aim_correction) end
+            client.color_log(255, 165, 0, '+W.tech ~\0'); client.color_log(200,200,200, ' +ᴡ ᴄᴏɴꜰɪᴅᴇɴᴄᴇ disabled: Anti-aim correction restored')
+        end
+    end
+    confidence_update_callbacks()
+end)
+
+-- Save model on shutdown
+client.set_event_callback('shutdown', function()
+    save_model()
+    if rage_anti_aim_correction ~= nil and _orig_anti_aim_correction ~= nil then
+        ui.set(rage_anti_aim_correction, _orig_anti_aim_correction)
+    end
+end)
+
+ui.set_callback(confidence_indicator, function()
+    confidence_update_callbacks()
+end)
+
+-- Register or unregister confidence event callbacks in a similar style to other features
+function confidence_update_callbacks()
+    local enabled = ui.get(confidence_checkbox)
+    local show_overlay = ui.get(confidence_indicator)
+
+    local aim_fn = client[enabled and 'set_event_callback' or 'unset_event_callback']
+    aim_fn('aim_hit', confidence_aim_hit)
+
+    -- paint overlay callback only if overlay enabled
+    if show_overlay and enabled then
+        client.set_event_callback('paint', confidence_paint)
+    else
+        client.unset_event_callback('paint', confidence_paint)
+    end
+end
+
+-- Initialize callbacks according to current UI state
+confidence_update_callbacks()

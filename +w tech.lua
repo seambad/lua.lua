@@ -81,33 +81,8 @@ end
 
 local visual_functions = {}
 
-function visual_functions:should_show_intro()
-    local current_time = globals.realtime()
-    local game_start_time = database.read("wtech_game_start_time")
-    local last_intro_time = database.read("wtech_last_intro_time")
-
-    -- Инициализация, если ключи не существуют
-    if game_start_time == nil then
-        game_start_time = current_time
-        database.write("wtech_game_start_time", game_start_time)
-    end
-
-    if last_intro_time == nil then
-        last_intro_time = 0
-        database.write("wtech_last_intro_time", last_intro_time)
-    end
-
-    -- Если текущее время меньше, чем сохраненное время запуска игры, значит, игра перезапустилась
-    if current_time < game_start_time then
-        game_start_time = current_time
-        database.write("wtech_game_start_time", game_start_time)
-        last_intro_time = 0
-        database.write("wtech_last_intro_time", last_intro_time)
-    end
-
-    -- Интро показывается, если последний раз оно было показано до запуска игры (т.е. в предыдущем сеансе)
-    return last_intro_time < game_start_time
-end
+-- УБИРАЕМ ВСЮ ЛОГИКУ С ПРОВЕРКОЙ ВРЕМЕНИ И БАЗЫ ДАННЫХ
+-- Функция больше не проверяет, когда последний раз показывалось интро
 
 local intro = {}
 
@@ -131,12 +106,11 @@ function visual_functions:fetch_username_from_pastebin()
     end
     
     -- Замените YOUR_PASTEBIN_ID на ID вашего Pastebin
-    -- Пример: если ссылка https://pastebin.com/raw/abc123, то ID = "abc123"
     local pastebin_url = "https://pastebin.com/raw/YOUR_PASTEBIN_ID"
     
     http.get(pastebin_url, function(success, response)
         if success and response.status == 200 then
-            local username = response.body:gsub("%s+", "")  -- Убираем пробелы и переносы строк
+            local username = response.body:gsub("%s+", "")
             if username and #username > 0 then
                 obex_data.username = username
                 print("[W.tech] Username loaded from Pastebin: " .. username)
@@ -163,39 +137,36 @@ function visual_functions:fetch_username_from_pastebin()
 end
 
 function visual_functions:welcome_to_starlight()
-    -- Обновляем время последнего показа интро
-    database.write("wtech_last_intro_time", globals.realtime())
-
    local w,h = client.screen_size()
    
     -- Создаем полное сообщение с именем по умолчанию
     local full_message = "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
     
     intro[#intro + 1] ={
-        full_message = full_message,  -- Полное сообщение с именем
-        main_alpha = 0,  -- Альфа для основного сообщения
-        success_alpha = 0,  -- Альфа для сообщения об успешной загрузке
-        timer = 1800,  -- УВЕЛИЧЕНО общее время (с 1200 до 1800)
+        full_message = full_message,
+        main_alpha = 0,
+        success_alpha = 0,
+        timer = 1800,
         initial_timer = 1800,
-        fade_in_time = 150,    -- Время появления
-        fill_time = 600,       -- Время заполнения круга
-        transition_time = 200, -- Время перехода от основного к успешному сообщению
-        success_hold_time = 550, -- УВЕЛИЧЕНО время показа успешного сообщения (с 150 до 550)
-        fade_out_time = 300,   -- Время исчезновения
+        fade_in_time = 150,
+        fill_time = 600,
+        transition_time = 200,
+        success_hold_time = 550,
+        fade_out_time = 300,
         progress_complete = false,
-        y_offset = 50,  -- Начальное смещение по Y для анимации появления
-        scale = 0.8,    -- Начальный масштаб для анимации
+        y_offset = 50,
+        scale = 0.8,
         x = w / 2 - 150,
         y = h / 2,
-        bg_alpha = 0, -- Альфа для фона (добавлено для отдельного управления)
-        show_success_message = false, -- Флаг для отображения сообщения об успешной загрузке
-        main_y_offset = 0, -- Отдельное смещение для основного сообщения
-        success_y_offset = 30, -- Начальное смещение для сообщения об успешной загрузке
-        current_stage_index = 1, -- Текущий этап загрузки
-        stage_alpha = 0, -- Альфа для текста этапа загрузки
-        stage_timer = 0, -- Таймер для смены этапов
-        checkmark_animation = 0, -- Прогресс анимации галочки (0-1)
-        checkmark_pulse = 0, -- Пульсация галочки
+        bg_alpha = 0,
+        show_success_message = false,
+        main_y_offset = 0,
+        success_y_offset = 30,
+        current_stage_index = 1,
+        stage_alpha = 0,
+        stage_timer = 0,
+        checkmark_animation = 0,
+        checkmark_pulse = 0,
     }
     
     -- Пытаемся получить имя с Pastebin после создания интро
@@ -204,10 +175,8 @@ function visual_functions:welcome_to_starlight()
     end
 end
 
--- Запускаем экран загрузки при старте скрипта, если should_show_intro вернул true
-if visual_functions:should_show_intro() then
-    visual_functions:welcome_to_starlight()
-end
+-- ВСЕГДА ЗАПУСКАЕМ ЭКРАН ЗАГРУЗКИ ПРИ СТАРТЕ СКРИПТА
+visual_functions:welcome_to_starlight()
 
 function visual_functions:get_current_stage(progress)
     for i = #loading_stages, 1, -1 do
@@ -291,22 +260,22 @@ function visual_functions:start_intro()
             intro[i].checkmark_animation = lerp(0, 1, math.max(0, (transition_progress - 0.3) / 0.7))
             
             intro[i].bg_alpha = 200
-            intro[i].main_y_offset = lerp(0, -30, transition_progress)  -- Основное уезжает вверх
-            intro[i].success_y_offset = lerp(30, 0, transition_progress)  -- Успешное приезжает на место
+            intro[i].main_y_offset = lerp(0, -30, transition_progress)
+            intro[i].success_y_offset = lerp(30, 0, transition_progress)
             intro[i].scale = 1.0
             intro[i].progress = 1.0
             intro[i].progress_complete = true
             intro[i].show_success_message = true
         
-        -- ФАЗА 4: Удержание успешного сообщения (УВЕЛИЧЕНО ВРЕМЯ) - С ПУЛЬСАЦИЕЙ ГАЛОЧКИ
+        -- ФАЗА 4: Удержание успешного сообщения
         elseif time_passed < intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time then
             local hold_progress = (time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time)) / intro[i].success_hold_time
             
             intro[i].main_alpha = 0
-            intro[i].success_alpha = 255  -- Постоянная видимость успешного сообщения
+            intro[i].success_alpha = 255
             intro[i].bg_alpha = 200
             intro[i].main_y_offset = -30
-            intro[i].success_y_offset = 0  -- Успешное сообщение на месте
+            intro[i].success_y_offset = 0
             intro[i].scale = 1.0
             intro[i].progress = 1.0
             intro[i].progress_complete = true
@@ -314,7 +283,7 @@ function visual_functions:start_intro()
             intro[i].stage_alpha = 0
             intro[i].checkmark_animation = 1
             
-            -- Пульсация галочки (0-1)
+            -- Пульсация галочки
             intro[i].checkmark_pulse = 0.5 + 0.5 * math.sin(globals.realtime() * 3)
         
         -- ФАЗА 5: Плавное исчезновение успешного сообщения
@@ -322,14 +291,13 @@ function visual_functions:start_intro()
             local time_in_fade_out = time_passed - (intro[i].fade_in_time + intro[i].fill_time + intro[i].transition_time + intro[i].success_hold_time)
             local fade_out_progress = time_in_fade_out / intro[i].fade_out_time
             
-            -- Убедимся, что fade_out_progress не превышает 1
             fade_out_progress = math.min(fade_out_progress, 1.0)
             
-            intro[i].main_alpha = 0  -- Основное уже исчезло
+            intro[i].main_alpha = 0
             intro[i].success_alpha = lerp(255, 0, fade_out_progress)
             intro[i].bg_alpha = lerp(200, 0, fade_out_progress)
             intro[i].main_y_offset = -30
-            intro[i].success_y_offset = lerp(0, -30, fade_out_progress)  -- Успешное уезжает вверх
+            intro[i].success_y_offset = lerp(0, -30, fade_out_progress)
             intro[i].scale = lerp(1.0, 0.9, fade_out_progress)
             intro[i].progress = 1.0
             intro[i].progress_complete = true
@@ -339,49 +307,38 @@ function visual_functions:start_intro()
             intro[i].checkmark_pulse = 0
         end
 
-        -- Фон с увеличенным затемнением при запуске
+        -- Фон с затемнением
         renderer.rectangle(0, 0, w, h, 0, 0, 0, intro[i].bg_alpha)
         
-        -- ============================================
-        -- ОСНОВНОЕ СООБЩЕНИЕ (исчезает в фазе 3)
-        -- ============================================
+        -- ОСНОВНОЕ СООБЩЕНИЕ
         if intro[i].main_alpha > 0 then
-            -- Рассчитываем позицию с учетом анимации
             local current_y = h / 2 + intro[i].main_y_offset
+            local symbol_y = current_y - 15
             
-            -- СИМБОЛ (◣ _ ◢) НА 15 ПИКСЕЛЕЙ ВЫШЕ (РАСПОЛОЖЕН ЧУТЬ НИЖЕ, ЧЕМ БЫЛО)
-            local symbol_y = current_y - 15  -- Изменено с 25 на 15
-            
-            -- Рисуем символ с плавным появлением и красным цветом (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
+            -- Символ (◣ _ ◢)
             renderer.text(w / 2, symbol_y, 
-                         255, 0, 0, intro[i].main_alpha, "c", 0,  -- Изменено с "c+" на "c"
+                         255, 0, 0, intro[i].main_alpha, "c", 0,
                          "(◣ _ ◢)")
             
-            -- Тень символа для объемности (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
+            -- Тень символа
             renderer.text(w / 2 + 2, symbol_y + 2, 
-                         0, 0, 0, intro[i].main_alpha * 0.3, "c", 0,  -- Изменено с "c+" на "c"
+                         0, 0, 0, intro[i].main_alpha * 0.3, "c", 0,
                          "(◣ _ ◢)")
             
-            -- Основной текст с анимацией
+            -- Основной текст
             local full_message = intro[i].full_message or "+W.tech recode loading Welcome back " .. obex_data.username .. '.'
-            
-            -- Разделяем текст на "+W.tech" и остальную часть
             local prefix = "+W.tech"
             local suffix = full_message:sub(#prefix + 1)
-            
-            -- Измеряем ширину префикса
             local prefix_width = renderer.measure_text(nil, prefix)
-            
-            -- Рассчитываем начальную позицию для центрирования всей строки
             local total_width = renderer.measure_text(nil, full_message)
             local start_x = w / 2 - total_width / 2
             
-            -- Рисуем "+W.tech" красным цветом
+            -- "+W.tech" красным
             renderer.text(start_x, current_y, 
                          255, 0, 0, intro[i].main_alpha, nil, 0,
                          prefix)
             
-            -- Рисуем остальной текст белым цветом
+            -- Остальной текст белым
             renderer.text(start_x + prefix_width, current_y, 
                          255, 255, 255, intro[i].main_alpha, nil, 0,
                          suffix)
@@ -389,60 +346,49 @@ function visual_functions:start_intro()
             -- Текст сборки
             local build_text = "build "
             local beta_text = string.upper(obex_data.build)
-            
-            -- Измеряем ширину текста "build "
             local build_width = renderer.measure_text(nil, build_text)
             local beta_width = renderer.measure_text(nil, beta_text)
-            
-            -- Рассчитываем начальную позицию для центрирования всей строки
             local total_build_width = build_width + beta_width
             local build_start_x = w / 2 - total_build_width / 2
             
-            -- Рисуем "build " белым цветом
+            -- "build " белым
             renderer.text(build_start_x, current_y + 25, 
                          255, 255, 255, intro[i].main_alpha, nil, 0, 
                          build_text)
             
-            -- Рисуем "BETA" красным цветом
+            -- "BETA" красным
             renderer.text(build_start_x + build_width, current_y + 25, 
                          255, 0, 0, intro[i].main_alpha, nil, 0,
                          beta_text)
 
-            -- Радиус круга
+            -- Круг прогресса
             local radius = 10 * intro[i].scale
-            
-            -- Позиция круга с учетом анимации
             local circle_y = current_y + 50
             
-            -- Рисуем фон круга (полный круг) с плавным появлением
+            -- Фон круга
             renderer.circle_outline(w / 2, circle_y, 
                                    40, 40, 40, intro[i].main_alpha, 
                                    radius, 0, 1, 2 * intro[i].scale)
             
-            -- Рисуем заполняющуюся часть (процент заполнения) с плавным появлением
+            -- Заполняющаяся часть
             if intro[i].progress > 0 then
                 renderer.circle_outline(w / 2, circle_y, 
                                        255, 0, 0, intro[i].main_alpha,
                                        radius, 0, intro[i].progress, 2 * intro[i].scale)
             end
             
-            -- Отображаем проценты под кругом
+            -- Проценты
             local percent = math.floor(intro[i].progress * 100)
             renderer.text(w / 2, circle_y + radius + 15, 
                          255, 255, 255, intro[i].main_alpha, "c", 0, 
                          percent .. "%")
             
-            -- ============================================
-            -- ТЕКСТ ТЕКУЩЕГО ЭТАПА ЗАГРУЗКИ ПОД ПРОГРЕСС-БАРОМ
-            -- ============================================
+            -- Текст текущего этапа загрузки
             if intro[i].stage_alpha > 0 then
                 local stage_text_y = circle_y + radius + 40
-                
-                -- Получаем текущий этап загрузки
                 local current_stage = visual_functions:get_current_stage(intro[i].progress)
                 
                 if current_stage then
-                    -- Декоративные точки перед текстом (анимированные)
                     local dots = ""
                     local dot_count = math.floor((intro[i].stage_timer % 30) / 10)
                     
@@ -454,18 +400,15 @@ function visual_functions:start_intro()
                         end
                     end
                     
-                    -- Текст этапа загрузки
                     local stage_text = current_stage.text
                     local full_stage_text = dots .. " " .. stage_text
                     local stage_width = renderer.measure_text(nil, full_stage_text)
                     local stage_x = w / 2 - stage_width / 2
                     
-                    -- Рисуем текст этапа загрузки
                     renderer.text(stage_x, stage_text_y, 
                                  200, 200, 200, intro[i].stage_alpha, nil, 0,
                                  full_stage_text)
                     
-                    -- Декоративная линия над текстом этапа
                     local line_width = 150
                     local line_x = w / 2 - line_width / 2
                     renderer.rectangle(line_x, stage_text_y - 5, line_width, 1, 
@@ -474,66 +417,49 @@ function visual_functions:start_intro()
             end
         end
         
-        -- ============================================
-        -- СООБЩЕНИЕ ОБ УСПЕШНОЙ ЗАГРУЗКЕ: СИМВОЛ (◣ _ ◢) НАД ТЕКСТОМ "+W.tech recode loaded"
-        -- ============================================
+        -- СООБЩЕНИЕ ОБ УСПЕШНОЙ ЗАГРУЗКЕ
         if intro[i].show_success_message and intro[i].success_alpha > 0 then
-            -- Позиционируем сообщение по центру экрана с учетом анимации
             local message_y = h / 2 + intro[i].success_y_offset
             
-            -- 1. СИМБОЛ (◣ _ ◢) НАД ТЕКСТОМ (+20 пикселей выше) (УМЕНЬШЕННЫЙ РАЗМЕР)
+            -- 1. Символ (◣ _ ◢)
             local symbol_text = "(◣ _ ◢)"
-            
-            -- Рисуем символ красным цветом с центрированием (УМЕНЬШЕННЫЙ ФЛАГ "c" вместо "c+")
             renderer.text(w / 2, message_y - 20, 
-                         255, 0, 0, intro[i].success_alpha, "c", 0,  -- Изменено с "c+" на "c"
+                         255, 0, 0, intro[i].success_alpha, "c", 0,
                          symbol_text)
             
-            -- 2. ОСНОВНАЯ НАДПИСЬ: "+W.tech recode loaded" ПОД СИМВОЛОМ
-            -- Разделяем на части для разного цвета
+            -- 2. Основная надпись
             local prefix = "+W.tech"
             local recode_text = " recode "
             local loaded_text = " loaded "
             
-            -- Измеряем ширину каждой части
             local prefix_width = renderer.measure_text(nil, prefix)
             local recode_width = renderer.measure_text(nil, recode_text)
             local loaded_width = renderer.measure_text(nil, loaded_text)
             
-            -- Рассчитываем общую ширину и начальную позицию (без галочки)
             local total_width = prefix_width + recode_width + loaded_width
             local start_x = w / 2 - total_width / 2
             
-            -- Рисуем "+W.tech" красным цветом
             renderer.text(start_x, message_y, 
                          255, 0, 0, intro[i].success_alpha, nil, 0,
                          prefix)
             
-            -- Рисуем " recode " БЕЛЫМ цветом
             renderer.text(start_x + prefix_width, message_y, 
                          255, 255, 255, intro[i].success_alpha, nil, 0,
                          recode_text)
             
-            -- Рисуем " loaded " белым цветом
             renderer.text(start_x + prefix_width + recode_width, message_y, 
                          255, 255, 255, intro[i].success_alpha, nil, 0,
                          loaded_text)
             
-            -- 3. КРАСИВАЯ АНИМИРОВАННАЯ ГАЛОЧКА
+            -- 3. Галочка
             local checkmark_x = start_x + total_width + 5
             local checkmark_y = message_y
             
-            -- Базовый размер галочки
-            local base_size = 12
-            
-            -- Анимация масштаба галочки
             local checkmark_scale = intro[i].checkmark_animation * (1 + 0.1 * intro[i].checkmark_pulse)
-            
-            -- Цвет галочки с пульсацией
             local green_intensity = 150 + 105 * intro[i].checkmark_pulse
             local checkmark_alpha = intro[i].success_alpha * intro[i].checkmark_animation
             
-            -- Рисуем свечение/тень галочки (3 слоя для объемности)
+            -- Свечение/тень
             for offset = 1, 3 do
                 local glow_alpha = checkmark_alpha * (0.3 - 0.1 * offset)
                 renderer.text(checkmark_x + offset, checkmark_y + offset, 
@@ -541,12 +467,12 @@ function visual_functions:start_intro()
                              "✓")
             end
             
-            -- Основная галочка с анимацией
+            -- Основная галочка
             renderer.text(checkmark_x, checkmark_y, 
                          0, green_intensity, 0, checkmark_alpha, nil, 0,
                          "✓")
             
-            -- Блестящий эффект на галочке (маленькая точка)
+            -- Блестящий эффект
             if intro[i].checkmark_animation > 0.5 then
                 local sparkle_alpha = checkmark_alpha * intro[i].checkmark_pulse
                 renderer.text(checkmark_x + 3, checkmark_y - 3, 
@@ -554,26 +480,23 @@ function visual_functions:start_intro()
                              ".")
             end
             
-            -- 4. ПОЛОСКА-РАЗДЕЛИТЕЛЬ (ТАКАЯ ЖЕ, КАК В 1 ЭТАПЕ)
+            -- 4. Полоска-разделитель
             local line_width = 150
             local line_x = w / 2 - line_width / 2
-            local line_y = message_y + 20  -- 5 пикселей выше текста "Good Luck !"
+            local line_y = message_y + 20
             
-            -- Рисуем декоративную линию
             renderer.rectangle(line_x, line_y, line_width, 1, 
                              100, 100, 100, intro[i].success_alpha * 0.3)
             
-            -- 5. ТЕКСТ "Good Luck !" СНИЗУ (ЧУТЬ НИЖЕ ПОЛОСКИ)
+            -- 5. Текст "Good Luck !"
             local good_luck_text = "Good Luck !"
             local good_luck_width = renderer.measure_text(nil, good_luck_text)
             local good_luck_x = w / 2 - good_luck_width / 2
             
-            -- Рисуем текст "Good Luck !" белым цветом
             renderer.text(good_luck_x, message_y + 25, 
                          255, 255, 255, intro[i].success_alpha * 0.8, nil, 0,
                          good_luck_text)
         end
-        -- ============================================
 
         intro[i].timer = intro[i].timer - 1 
 

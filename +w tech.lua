@@ -2,7 +2,23 @@
 -- ДАЛЕЕ ИДЁТ ВАШ ОСНОВНОЙ КОД СКРИПТА
 -- ============================================
 -- Переменная для хранения текущей вкладки
- pizdecSS = {
+local ffi = require 'ffi'
+local vector = require 'vector'
+
+local inspect = require 'gamesense/inspect'
+
+local base64 = require 'gamesense/base64'
+local clipboard = require 'gamesense/clipboard'
+
+local c_entity = require 'gamesense/entity'
+local csgo_weapons = require 'gamesense/csgo_weapons'
+
+local trace = require 'gamesense/trace'
+
+-- СОЗДАЕМ НОВУЮ ВКЛАДКУ "SERVERS"
+local servers_tab = ui.new_tab("Servers")
+
+pizdecSS = {
     ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
     ["•  HackHaven HvH"] = "46.174.55.54:27015",
     ["•  eXpidors.Ru"] = "46.174.51.137:7777",
@@ -12,17 +28,14 @@
     ["•  SharkProject | MM"] = "37.230.228.148:27015",
     ["•  WhiteProject"] = "46.174.49.161:1337",
     ["•  LivixProject HVH"] = "185.9.145.159:28423",
-
 }
 
--- СОЗДАЕМ НОВУЮ ВКЛАДКУ "SERVERS"
-local servers_tab = ui.new_tab("Servers")
-
 clipboard = require("gamesense/clipboard")
- servs = {}
+servs = {}
 for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
+
 -- Элементы для вкладки Servers
 zalupenko = ui.new_listbox(servers_tab, "Connects", servs)
 
@@ -38,6 +51,7 @@ Connects = ui.new_button(servers_tab, "\r Connect", function()
     end
     client.exec("connect " .. servers)
 end)
+
 Copyss = ui.new_button(servers_tab, "\r Copy ip-address", function()
     local index = ui.get(zalupenko)
     local i = 0
@@ -48,25 +62,12 @@ Copyss = ui.new_button(servers_tab, "\r Copy ip-address", function()
         end
         i = i + 1
     end
-	clipboard.set(servers)
+    clipboard.set(servers)
 end)
+
 RetrySS = ui.new_button(servers_tab, "\r Rejoin (Retry)", function()
-	client.exec("disconnect; retry")
+    client.exec("disconnect; retry")
 end)
-
--- ОСТАЛЬНОЙ ВАШ КОД ПРОДОЛЖАЕТСЯ НИЖЕ...
-local ffi = require 'ffi'
-local vector = require 'vector'
-
-local inspect = require 'gamesense/inspect'
-
-local base64 = require 'gamesense/base64'
-local clipboard = require 'gamesense/clipboard'
-
-local c_entity = require 'gamesense/entity'
-local csgo_weapons = require 'gamesense/csgo_weapons'
-
-local trace = require 'gamesense/trace'
 
 -- ============ ВСТАВЬТЕ ВЕСЬ КОД ЗАГРУЗОЧНОГО ЭКРАНА ЗДЕСЬ ============
 local obex_data = obex_fetch and obex_fetch() or {username = 'User', build = 'BETA', discord=''}
@@ -15752,4 +15753,5 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 

@@ -1,20 +1,3 @@
-
--- ДАЛЕЕ ИДЁТ ВАШ ОСНОВНОЙ КОД СКРИПТА
--- ============================================
--- Переменная для хранения текущей вкладки
-local ffi = require 'ffi'
-local vector = require 'vector'
-
-local inspect = require 'gamesense/inspect'
-
-local base64 = require 'gamesense/base64'
-local clipboard = require 'gamesense/clipboard'
-
-local c_entity = require 'gamesense/entity'
-local csgo_weapons = require 'gamesense/csgo_weapons'
-
-local trace = require 'gamesense/trace'
-
 -- СОЗДАЕМ НОВУЮ ВКЛАДКУ "SERVERS"
 local servers_tab = ui.new_tab("Servers")
 
@@ -68,6 +51,20 @@ end)
 RetrySS = ui.new_button(servers_tab, "\r Rejoin (Retry)", function()
     client.exec("disconnect; retry")
 end)
+
+-- ОСТАЛЬНОЙ ВАШ КОД ПРОДОЛЖАЕТСЯ НИЖЕ...
+local ffi = require 'ffi'
+local vector = require 'vector'
+
+local inspect = require 'gamesense/inspect'
+
+local base64 = require 'gamesense/base64'
+local clipboard = require 'gamesense/clipboard'
+
+local c_entity = require 'gamesense/entity'
+local csgo_weapons = require 'gamesense/csgo_weapons'
+
+local trace = require 'gamesense/trace'
 
 -- ============ ВСТАВЬТЕ ВЕСЬ КОД ЗАГРУЗОЧНОГО ЭКРАНА ЗДЕСЬ ============
 local obex_data = obex_fetch and obex_fetch() or {username = 'User', build = 'BETA', discord=''}
@@ -15753,5 +15750,6 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 
 

@@ -13,38 +13,13 @@ pizdecSS = {
 }
 
 clipboard = require("gamesense/clipboard")
-servs = {}
-for k, v in pairs(pizdecSS) do
-    table.insert(servs, k)
-end
-
--- Элементы для вкладки Servers
-zalupenko = ui.new_listbox("lua", "b", "Connects", servs)
 
 Connects = ui.new_button("lua", "b", "\r Connect", function()
-    local index = ui.get(zalupenko)
-    local i = 0
-
-    for k, v in pairs(pizdecSS) do
-        if index == i then
-            servers = v
-        end
-        i = i + 1
-    end
-    client.exec("connect " .. servers)
+    client.exec("connect 62.122.214.55:27015") -- Прямое подключение к первому серверу
 end)
 
 Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
-    local index = ui.get(zalupenko)
-    local i = 0
-
-    for k, v in pairs(pizdecSS) do
-        if index == i then
-            servers = v
-        end
-        i = i + 1
-    end
-    clipboard.set(servers)
+    clipboard.set("62.122.214.55:27015") -- Копирование IP первого сервера
 end)
 
 RetrySS = ui.new_button("lua", "b", "\r Rejoin (Retry)", function()
@@ -15748,6 +15723,7 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 
 
 

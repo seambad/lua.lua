@@ -554,6 +554,7 @@ client.delay_call(0, function()
         visual_functions:fetch_username_from_pastebin()
     end
 end)
+
 local function DUMMY(...)
     return ...
 end

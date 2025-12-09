@@ -1,6 +1,6 @@
 
 -- Переменная для хранения текущей вкладки
- pizdecSS = {
+pizdecSS = {
     ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
     ["•  HackHaven HvH"] = "46.174.55.54:27015",
     ["•  eXpidors.Ru"] = "46.174.51.137:7777",
@@ -10,42 +10,55 @@
     ["•  SharkProject | MM"] = "37.230.228.148:27015",
     ["•  WhiteProject"] = "46.174.49.161:1337",
     ["•  LivixProject HVH"] = "185.9.145.159:28423",
-
 }
+
 clipboard = require("gamesense/clipboard")
- servs = {}
+servs = {}
 for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
+
 -- Элементы для вкладки Servers
-zalupenko = ui.new_listbox("lua", "b", "Connects", servs )
+zalupenko = ui.new_listbox("lua", "Connects", servs)
 
-Connects = ui.new_button("lua", "b", "\r Connect", function()
+Connects = ui.new_button("lua", "\r Connect", function()
     local index = ui.get(zalupenko)
     local i = 0
+    local selected_server = nil
 
     for k, v in pairs(pizdecSS) do
         if index == i then
-            servers = v
+            selected_server = v
+            break
         end
         i = i + 1
     end
-    client.exec("connect " .. servers)
+    
+    if selected_server then
+        client.exec("connect " .. selected_server)
+    end
 end)
-Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
+
+Copyss = ui.new_button("lua", "\r Copy ip-address", function()
     local index = ui.get(zalupenko)
     local i = 0
+    local selected_server = nil
 
     for k, v in pairs(pizdecSS) do
         if index == i then
-            servers = v
+            selected_server = v
+            break
         end
         i = i + 1
     end
-	clipboard.set(servers)
+    
+    if selected_server then
+        clipboard.set(selected_server)
+    end
 end)
-RetrySS = ui.new_button("lua", "b", "\r Rejoin (Retry)", function()
-	client.exec("disconnect; retry")
+
+RetrySS = ui.new_button("lua", "\r Rejoin (Retry)", function()
+    client.exec("disconnect; retry")
 end)
 
 local ffi = require 'ffi'
@@ -15745,3 +15758,4 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+

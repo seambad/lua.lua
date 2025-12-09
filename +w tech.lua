@@ -1,56 +1,4 @@
--- СОЗДАЕМ НОВУЮ ВКЛАДКУ "SERVERS"
-local servers_tab = ui.new_tab("Servers")
 
-pizdecSS = {
-    ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
-    ["•  HackHaven HvH"] = "46.174.55.54:27015",
-    ["•  eXpidors.Ru"] = "46.174.51.137:7777",
-    ["•  eXpidors.Ru - Scout"] = "62.122.215.105:6666",
-    ["•  sippin' on wok mm hvh"] = "46.174.55.52:1488",
-    ["•  War3ft Project"] = "194.93.2.30:1337",
-    ["•  SharkProject | MM"] = "37.230.228.148:27015",
-    ["•  WhiteProject"] = "46.174.49.161:1337",
-    ["•  LivixProject HVH"] = "185.9.145.159:28423",
-}
-
-clipboard = require("gamesense/clipboard")
-servs = {}
-for k, v in pairs(pizdecSS) do
-    table.insert(servs, k)
-end
-
--- Элементы для вкладки Servers
-zalupenko = ui.new_listbox(servers_tab, "Connects", servs)
-
-Connects = ui.new_button(servers_tab, "\r Connect", function()
-    local index = ui.get(zalupenko)
-    local i = 0
-
-    for k, v in pairs(pizdecSS) do
-        if index == i then
-            servers = v
-        end
-        i = i + 1
-    end
-    client.exec("connect " .. servers)
-end)
-
-Copyss = ui.new_button(servers_tab, "\r Copy ip-address", function()
-    local index = ui.get(zalupenko)
-    local i = 0
-
-    for k, v in pairs(pizdecSS) do
-        if index == i then
-            servers = v
-        end
-        i = i + 1
-    end
-    clipboard.set(servers)
-end)
-
-RetrySS = ui.new_button(servers_tab, "\r Rejoin (Retry)", function()
-    client.exec("disconnect; retry")
-end)
 
 -- ОСТАЛЬНОЙ ВАШ КОД ПРОДОЛЖАЕТСЯ НИЖЕ...
 local ffi = require 'ffi'
@@ -15750,6 +15698,7 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 
 
 

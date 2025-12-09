@@ -1,6 +1,14 @@
 
--- Переменная для хранения текущей вкладки
- pizdecSS = {
+-- ============================================
+-- СЕРВЕРЫ ВО ВКЛАДКЕ LUA
+-- ============================================
+-- Разделитель для серверов
+ui.new_label("LUA", "B", "╔════════════════════════════════╗")
+ui.new_label("LUA", "B", "        🖥️  SERVERS MENU")
+ui.new_label("LUA", "B", "╚════════════════════════════════╝")
+
+-- Переменная для хранения серверов
+pizdecSS = {
     ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
     ["•  HackHaven HvH"] = "46.174.55.54:27015",
     ["•  eXpidors.Ru"] = "46.174.51.137:7777",
@@ -10,44 +18,64 @@
     ["•  SharkProject | MM"] = "37.230.228.148:27015",
     ["•  WhiteProject"] = "46.174.49.161:1337",
     ["•  LivixProject HVH"] = "185.9.145.159:28423",
-
 }
+
 clipboard = require("gamesense/clipboard")
- servs = {}
+servs = {}
 for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
--- Элементы для вкладки Servers
-zalupenko = ui.new_listbox("lua", "b", "Connects", servs )
 
-Connects = ui.new_button("lua", "b", "\r Connect", function()
+-- Элементы для серверов во вкладке LUA
+zalupenko = ui.new_listbox("LUA", "B", "Server List", servs)
+
+Connects = ui.new_button("LUA", "B", "\r Connect", function()
     local index = ui.get(zalupenko)
     local i = 0
+    local servers = nil
 
     for k, v in pairs(pizdecSS) do
         if index == i then
             servers = v
+            break
         end
         i = i + 1
     end
-    client.exec("connect " .. servers)
+    
+    if servers then
+        client.exec("connect " .. servers)
+    end
 end)
-Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
+
+Copyss = ui.new_button("LUA", "B", "\r Copy ip-address", function()
     local index = ui.get(zalupenko)
     local i = 0
+    local servers = nil
 
     for k, v in pairs(pizdecSS) do
         if index == i then
             servers = v
+            break
         end
         i = i + 1
     end
-	clipboard.set(servers)
-end)
-RetrySS = ui.new_button("lua", "b", "\r Rejoin (Retry)", function()
-	client.exec("disconnect; retry")
+    
+    if servers then
+        clipboard.set(servers)
+    end
 end)
 
+RetrySS = ui.new_button("LUA", "B", "\r Rejoin (Retry)", function()
+    client.exec("disconnect; retry")
+end)
+
+-- Разделитель после серверов
+ui.new_label("LUA", "B", "──────────────────────────────────")
+ui.new_label("LUA", "B", "")
+
+-- ============================================
+-- ОСТАЛЬНОЙ КОД СКРИПТА
+-- ============================================
 local ffi = require 'ffi'
 local vector = require 'vector'
 
@@ -15747,3 +15775,4 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+

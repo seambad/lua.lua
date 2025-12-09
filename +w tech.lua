@@ -1,6 +1,53 @@
 
+-- Переменная для хранения текущей вкладки
+ pizdecSS = {
+    ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
+    ["•  HackHaven HvH"] = "46.174.55.54:27015",
+    ["•  eXpidors.Ru"] = "46.174.51.137:7777",
+    ["•  eXpidors.Ru - Scout"] = "62.122.215.105:6666",
+    ["•  sippin' on wok mm hvh"] = "46.174.55.52:1488",
+    ["•  War3ft Project"] = "194.93.2.30:1337",
+    ["•  SharkProject | MM"] = "37.230.228.148:27015",
+    ["•  WhiteProject"] = "46.174.49.161:1337",
+    ["•  LivixProject HVH"] = "185.9.145.159:28423",
 
--- ОСТАЛЬНОЙ ВАШ КОД ПРОДОЛЖАЕТСЯ НИЖЕ...
+}
+clipboard = require("gamesense/clipboard")
+ servs = {}
+for k, v in pairs(pizdecSS) do
+    table.insert(servs, k)
+end
+-- Элементы для вкладки Servers
+zalupenko = ui.new_listbox("lua", "b", "Connects", servs )
+
+Connects = ui.new_button("lua", "b", "\r Connect", function()
+    local index = ui.get(zalupenko)
+    local i = 0
+
+    for k, v in pairs(pizdecSS) do
+        if index == i then
+            servers = v
+        end
+        i = i + 1
+    end
+    client.exec("connect " .. servers)
+end)
+Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
+    local index = ui.get(zalupenko)
+    local i = 0
+
+    for k, v in pairs(pizdecSS) do
+        if index == i then
+            servers = v
+        end
+        i = i + 1
+    end
+	clipboard.set(servers)
+end)
+RetrySS = ui.new_button("lua", "b", "\r Rejoin (Retry)", function()
+	client.exec("disconnect; retry")
+end)
+
 local ffi = require 'ffi'
 local vector = require 'vector'
 
@@ -15698,7 +15745,3 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
-
-
-
-

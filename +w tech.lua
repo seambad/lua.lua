@@ -1,5 +1,5 @@
 
--- Переменная для хранения текущей вкладки
+-- Список серверов
 pizdecSS = {
     ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
     ["•  HackHaven HvH"] = "46.174.55.54:27015",
@@ -19,7 +19,7 @@ for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
 
--- Элементы создаются только в разделе Lua → B
+-- Создаем элементы управления только в разделе Lua -> B
 zalupenko = ui.new_listbox("lua", "b", "Серверы", "Выберите сервер", servs)
 
 Connects = ui.new_button("lua", "b", "Подключиться", function()
@@ -29,6 +29,7 @@ Connects = ui.new_button("lua", "b", "Подключиться", function()
     for k, v in pairs(pizdecSS) do
         if index == i then
             servers = v
+            break
         end
         i = i + 1
     end
@@ -42,6 +43,7 @@ Copyss = ui.new_button("lua", "b", "Скопировать IP", function()
     for k, v in pairs(pizdecSS) do
         if index == i then
             servers = v
+            break
         end
         i = i + 1
     end
@@ -15748,5 +15750,6 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 
 

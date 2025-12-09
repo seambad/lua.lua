@@ -18,10 +18,10 @@ for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
 
--- Элементы для вкладки Servers
-zalupenko = ui.new_listbox("lua", "Connects", servs)
+-- Элементы для вкладки Misc (серверы)
+zalupenko = ui.new_listbox("misc", "Connects", servs)
 
-Connects = ui.new_button("lua", "\r Connect", function()
+Connects = ui.new_button("misc", "\r Connect", function()
     local index = ui.get(zalupenko)
     local i = 0
     local selected_server = nil
@@ -39,7 +39,7 @@ Connects = ui.new_button("lua", "\r Connect", function()
     end
 end)
 
-Copyss = ui.new_button("lua", "\r Copy ip-address", function()
+Copyss = ui.new_button("misc", "\r Copy ip-address", function()
     local index = ui.get(zalupenko)
     local i = 0
     local selected_server = nil
@@ -57,7 +57,7 @@ Copyss = ui.new_button("lua", "\r Copy ip-address", function()
     end
 end)
 
-RetrySS = ui.new_button("lua", "\r Rejoin (Retry)", function()
+RetrySS = ui.new_button("misc", "\r Rejoin (Retry)", function()
     client.exec("disconnect; retry")
 end)
 
@@ -15758,4 +15758,5 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+
 

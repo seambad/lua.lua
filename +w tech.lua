@@ -1,4 +1,6 @@
 
+-- ДАЛЕЕ ИДЁТ ВАШ ОСНОВНОЙ КОД СКРИПТА
+-- ============================================
 -- Переменная для хранения текущей вкладки
  pizdecSS = {
     ["•  [hvhserver.xyz] roll fix"] = "62.122.214.55:27015",
@@ -12,15 +14,19 @@
     ["•  LivixProject HVH"] = "185.9.145.159:28423",
 
 }
+
+-- СОЗДАЕМ НОВУЮ ВКЛАДКУ "SERVERS"
+local servers_tab = ui.new_tab("Servers")
+
 clipboard = require("gamesense/clipboard")
  servs = {}
 for k, v in pairs(pizdecSS) do
     table.insert(servs, k)
 end
 -- Элементы для вкладки Servers
-zalupenko = ui.new_listbox("lua", "b", "Connects", servs )
+zalupenko = ui.new_listbox(servers_tab, "Connects", servs)
 
-Connects = ui.new_button("lua", "b", "\r Connect", function()
+Connects = ui.new_button(servers_tab, "\r Connect", function()
     local index = ui.get(zalupenko)
     local i = 0
 
@@ -32,7 +38,7 @@ Connects = ui.new_button("lua", "b", "\r Connect", function()
     end
     client.exec("connect " .. servers)
 end)
-Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
+Copyss = ui.new_button(servers_tab, "\r Copy ip-address", function()
     local index = ui.get(zalupenko)
     local i = 0
 
@@ -44,10 +50,11 @@ Copyss = ui.new_button("lua", "b", "\r Copy ip-address", function()
     end
 	clipboard.set(servers)
 end)
-RetrySS = ui.new_button("lua", "b", "\r Rejoin (Retry)", function()
+RetrySS = ui.new_button(servers_tab, "\r Rejoin (Retry)", function()
 	client.exec("disconnect; retry")
 end)
 
+-- ОСТАЛЬНОЙ ВАШ КОД ПРОДОЛЖАЕТСЯ НИЖЕ...
 local ffi = require 'ffi'
 local vector = require 'vector'
 
@@ -15745,3 +15752,4 @@ end
 ui_set_callback(master_switch, interface_callback)
 interface_callback(master_switch) do
 end
+

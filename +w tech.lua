@@ -360,7 +360,7 @@ v22.delay_call(
     4,
     function()
         v44.create_new(
-            {{"Welcome back, "}, {v38.name, true}, {" to +w.tech "}, {v38.build, true}, {" " .. v38.vers, false}}
+            {{"Welcome back, "}, {v38.name, true}, {" to +w.tech "}, {v38.build, true}, {"  " .. v38.vers, false}}
         )
     end
 )
@@ -947,7 +947,7 @@ local v50 =
                 {v142, "Visuals"}
             )
             v103.menu.tools.indicatorfont =
-                v104:combobox(v107 .. "Indicator style", {"Default", "New", "Renewed", "Icons", "+w.tech"}):depend(
+                v104:combobox(v107 .. "Indicator style", {"Default", "Renewed", "Icons", "+w.tech"}):depend(
                 {v103.menu.tools.indicators, true}
             ):depend({v142, "Visuals"})
             v103.menu.tools.indicator_bind =
@@ -1091,6 +1091,7 @@ local v50 =
                 {v142, "Helpers"},
                 {v103.menu.tools.air_stop, true}
             )
+            v103.menu.tools.clantag = v104:checkbox("\v\a00BFFFFF Clantag \r☭"):depend({v142, "Helpers"})
             v103.menu.tools.unsafe_charge = v104:checkbox("\v\a00BFFFFF Unsafe charge \r☭"):depend({v142, "Helpers"})
             v103.menu.tools.fast_ladder = v104:checkbox("\v\aFF0000FF Fast ladder \r☭"):depend({v142, "Helpers"})
             v103.menu.tools.trashtalk = v104:checkbox("\v\aFAF0E6FF Trashtalk ☭"):depend({v142, "Helpers"})
@@ -2239,8 +2240,6 @@ local v50 =
             local v498 = 0
             if (v497 == "Default") then
                 v498 = 1
-            elseif (v497 == "New") then
-                v498 = 2
             elseif (v497 == "+w.tech") then
                 v498 = 3
             elseif (v497 == "Renewed") then
@@ -3019,7 +3018,7 @@ local v50 =
                 elseif (v871 == "FS") then
                     v872 = {[1] = 198, [2] = 124, [3] = 158, [4] = v870}
                 elseif (v860 == "t") then
-                    v871 = "Target: " .. v623.helpers:get_target()
+                    v871 = " Target: " .. v623.helpers:get_target()
                 end
                 v623:text(
                     25,
@@ -3432,8 +3431,8 @@ v51.back = function()
         v51.progress * 255,
         "cb",
         nil,
-        "+w.tech.\a" ..
-            v50.helpers.rgba_to_hex(nil, v38.accent.r, v38.accent.g, v38.accent.b, v51.progress * 255) .. "lua"
+        "Welcome  +w.tech.\a" ..
+            v50.helpers.rgba_to_hex(nil, v38.accent.r, v38.accent.g, v38.accent.b, v51.progress * 255) .. "lua beta"
     )
     if not v51.completing then
         v22.delay_call(
